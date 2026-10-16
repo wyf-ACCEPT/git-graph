@@ -1,0 +1,92 @@
+shared/gitLog.ts
+  s_4a87bc27e32e0c::t_084ade521d708d 15-22
+  s_1a7d1624a545dc::t_796525c2ce3508 23-24,27
+AGENTS.md
+  s_1a7d1624a545dc::t_5cd3f90e627537 495-498,525,538
+server/routes/git.ts
+  s_07a82630ffa1e7::t_2f3287d2abc07f 166-167,462,465
+server/services/git.test.ts
+  s_07a82630ffa1e7::t_0abd45bcf320c6 243,850-885
+server/services/git.ts
+  s_07a82630ffa1e7::t_3faeca525b570b 103,888-892,900-906
+shared/git.schema.ts
+  s_07a82630ffa1e7::t_a6f93a5457ccd8 30,411,432
+shared/gitLog.test.ts
+  s_1a7d1624a545dc::t_0d15c447152591 10,19
+src/App.tsx
+  s_1a7d1624a545dc::t_a69a92bd6effe4 1,16,27,43-44,96-99,305-306,309,315,319-322,326-328,330,334-346,348,353-362,423-425,428,556,595,623
+src/CommitDiffPage.tsx
+  s_1a7d1624a545dc::t_77a1aae696b61b 8,97
+src/ComparePage.tsx
+  s_1a7d1624a545dc::t_66ed62f518ba0e 8,149
+src/FilePreviewPage.tsx
+  s_1a7d1624a545dc::t_3e34be684a69dd 1-60
+src/WorkingTreePage.tsx
+  s_1a7d1624a545dc::t_0ee204c6fedd97 9,105
+src/components/CommitDetailPanel.test.tsx
+  s_1a7d1624a545dc::t_213572aefb565c 529-548
+src/components/CommitDetailPanel.tsx
+  s_1a7d1624a545dc::t_15cf6e87245f2d 15,90,118,216,267,285-286,289-290,345,352,531,640
+src/components/CommitGraph.test.tsx
+  s_1a7d1624a545dc::t_83da04fd41a3bb 30-55,337-399
+src/components/CommitGraph.tsx
+  s_1a7d1624a545dc::t_994ee834e338b7 12,16,27,151-152,164,167,183,265,271-274,283,326,349
+src/components/FileSourceView.test.tsx
+  s_1a7d1624a545dc::t_eb92a7d6ce9b40 1-35
+src/components/FileSourceView.tsx
+  s_1a7d1624a545dc::t_88f9f9ef7f5d55 1-22
+src/components/MultiFileDiffView.test.tsx
+  s_1a7d1624a545dc::t_469b76d1c939e7 189-199
+src/components/MultiFileDiffView.tsx
+  s_1a7d1624a545dc::t_bc0b96ae7a6803 146,149,168,227
+src/components/RefPill.test.tsx
+  s_1a7d1624a545dc::t_ecc9235e36b875 2,83-106
+src/components/RefPill.tsx
+  s_1a7d1624a545dc::t_a23d47602a1dd2 32-33,60,68,82-91,129-130,164,185,192-193,201
+src/components/fileStatus.tsx
+  s_1a7d1624a545dc::t_5a86e21b66ff80 51-52,57,60-61,64-67,71-84
+src/index.tsx
+  s_1a7d1624a545dc::t_aae12e4b7724c9 6-7,18
+src/lib/api.ts
+  s_07a82630ffa1e7::t_dcfb93703e88c6 25-31,36,38,40,44,131-135,143
+src/lib/commitDate.ts
+  s_1a7d1624a545dc::t_a6b45e3971db70 1-18
+src/lib/filePreview.test.ts
+  s_1a7d1624a545dc::t_51e028d1e51283 1-20
+src/lib/filePreview.ts
+  s_1a7d1624a545dc::t_b618c2abc0c140 1-50
+src/theme.css
+  s_1a7d1624a545dc::t_7eb4c239b70267 192
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ebe2dad08f84bc2e7b0a3ea371e5ce1a5377b353",
+  "prompts": {},
+  "sessions": {
+    "s_07a82630ffa1e7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a138de-6d90-70a2-9ff7-4608b370146e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    },
+    "s_1a7d1624a545dc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12fa8-7d6c-7241-b562-2a7a43014fc7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    },
+    "s_4a87bc27e32e0c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fbb9-3919-7c91-8829-6fa1f5aa75ef",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}

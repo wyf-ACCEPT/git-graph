@@ -4,14 +4,11 @@
 
 **Please do not open a public issue for a security problem.**
 
-Report it privately through GitHub's private vulnerability reporting:
-
-1. Go to the [Security tab](https://github.com/binaryplease/git-graph/security)
-2. Click **Report a vulnerability**
-
-You will get an acknowledgement within 7 days. If a fix is warranted, we will
-agree a disclosure timeline with you before publishing it, and credit you in the
-release notes unless you ask us not to.
+Use [this fork's Security tab](https://github.com/wyf-ACCEPT/git-graph/security)
+when private vulnerability reporting is available. Otherwise, contact the
+maintainer privately before publishing reproduction details. For an issue
+specific to the original project, use the
+[upstream security channel](https://github.com/binaryplease/git-graph/security).
 
 ## Supported versions
 
@@ -55,8 +52,11 @@ What **is** in scope:
   granted only to an `Origin` that exactly equals an entry of
   `GIT_GRAPH_ALLOWED_ORIGINS` (none by default); a grant to any other origin is in
   scope.
-- **Any write other than a confirmed checkout.** `POST /api/git/checkout` is the
-  only route that changes a repository. Any other way to mutate a repository is a
+- **Any write other than an explicitly requested checkout.**
+  `POST /api/git/checkout` is the only route that changes a repository.
+  Context-menu actions require confirmation; double-clicking a local branch
+  permits a direct switch after a fresh clean-worktree check, with confirmation
+  required if the check finds changes. Any other way to mutate a repository is a
   bug with security weight. So is any way to make the checkout act on a ref or
   commit git's own listings do not name, or to trigger it from a foreign web
   page. The checkout requires the `X-Git-Graph-Action: 1` header and a JSON

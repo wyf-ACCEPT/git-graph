@@ -1,5 +1,11 @@
 # git-graph
 
+Maintained fork: [wyf-ACCEPT/git-graph](https://github.com/wyf-ACCEPT/git-graph),
+based on [binaryplease/git-graph](https://github.com/binaryplease/git-graph).
+This fork adds local-time timestamps, direct branch double-click switching,
+HEAD-only hollow nodes, full-file previews, and Git-notes filtering.
+See [fork maintenance](docs/6x16-fork-maintenance.md) for details.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="docs/screenshot-light.png">
@@ -25,14 +31,14 @@ a branch, tag, or commit straight from the graph.
 With [Nix](https://nixos.org/download) — nothing to install:
 
 ```sh
-nix run github:binaryplease/git-graph            # serve the repos under the cwd
-nix run github:binaryplease/git-graph -- ~/src   # serve a specific projects folder
+nix run github:wyf-ACCEPT/git-graph            # serve the repos under the cwd
+nix run github:wyf-ACCEPT/git-graph -- ~/src   # serve a specific projects folder
 ```
 
 From source, with [Bun](https://bun.sh):
 
 ```sh
-git clone https://github.com/binaryplease/git-graph
+git clone https://github.com/wyf-ACCEPT/git-graph
 cd git-graph
 bun install
 bun run build
@@ -40,8 +46,20 @@ bun run cli -- ~/src
 ```
 
 Either way a browser opens on the graph. `nix profile install
-github:binaryplease/git-graph` puts `bgg` (and a spelled-out
+github:wyf-ACCEPT/git-graph` puts `bgg` (and a spelled-out
 `git-graph` alias) on your `PATH` for good.
+
+## Local `gg` shortcut
+
+After building, `./gg [ROOT] [--repo NAME] [--port PORT]` starts the loopback daemon
+on port 3107 and prints/copies its URL. ROOT defaults to the current directory.
+Use `./gg --help`, `--status`, `--logs`, or `--stop` for management. Open the URL
+in a browser or the current Codex conversation's browser panel.
+
+`./install.sh` can recreate a pinned local Bun runtime and build the application;
+it requires Node.js/npm and network access. Dependencies and runtime files are
+ignored by Git. A regular Bun installation also works with the normal commands
+above. The launcher accepts `GIT_GRAPH_BUN` for an explicit Bun executable.
 
 ## Using it
 
@@ -75,9 +93,13 @@ or a file that cannot be read, is a fatal startup error.
 
 ## What it shows
 
-- An SVG **commit graph** with per-lane colours, hollow merge nodes, and curved
-  elbow edges. The lane assignment handles octopus merges, root commits,
+- An SVG **commit graph** with per-lane colours, a compact hollow node only at
+  HEAD, and curved elbow edges. The lane assignment handles octopus merges, root commits,
   disconnected histories, and truncated windows.
+- **Commit timestamps** to the second in local time, omitting the year for the
+  current year and retaining the original ISO timestamp in the tooltip.
+- **Full-file previews** from changed-file rows, separate from diff and copy-path
+  controls, for commits, comparisons, and working-tree files.
 - **Ref pills** — `HEAD`, local branches, remote-tracking branches, tags. A
   branch and the remotes pointing at the same commit read as one segmented pill
   (`main │ origin`, the remotes appended inside the branch's own chip); when they
@@ -103,10 +125,12 @@ or a file that cannot be read, is a fatal startup error.
 
 ## What it changes
 
-**Checkout is the one write.** Everything else is read-only. A checkout always
-states what it will run, in which repository, before it runs — a detaching one
-warns that it detaches `HEAD` — and only runs on your confirm. It is `git
-switch` underneath, so git's own safety stays in charge: a switch that would
+**Checkout is the one write.** Everything else is read-only. Context-menu
+checkouts state the command and repository before confirmation; detached
+checkouts explain their consequence. Double-clicking a non-current local branch
+switches directly after a fresh server-side clean-worktree check. Uncommitted
+changes open the confirmation dialog instead. It is `git switch` underneath,
+so git's own safety stays in charge: a switch that would
 overwrite uncommitted changes is refused, and git's message is shown to you
 verbatim. After a checkout the graph, the working-tree row, and any open
 `/working` tab refresh.

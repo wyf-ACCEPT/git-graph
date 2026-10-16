@@ -1,0 +1,59 @@
+#!/bin/zsh
+set -euo pipefail
+APP_DIR="${0:A:h}"
+BUN="${GIT_GRAPH_BUN:-}"
+if [[ -z "$BUN" ]]; then
+ for runtime in "$APP_DIR/.runtime/node_modules/.bin/bun" "$APP_DIR/../.runtime/node_modules/.bin/bun"; do
+  if [[ -x "$runtime" ]]; then BUN="$runtime"; break; fi
+ done
+fi
+if [[ -z "$BUN" ]]; then BUN="$(command -v bun || true)"; fi
+PORT=3107
+repo=""
+root="${PWD:A}"
+action=start
+usage(){ cat <<'USAGE'
+Usage: gg [ROOT] [--repo NAME] [--port PORT]
+       gg --status | --stop | --logs [N] | --help
+
+The default ROOT is the current directory. gg scans that directory and its
+immediate child repositories; it does not assume Digients or choose a repo.
+The URL is copied to the clipboard. Ask the current Codex agent to open it in
+the current conversation's right panel.
+
+Examples:
+  cd ~/src && gg
+  gg ~/src --repo example-repository
+  gg --status
+USAGE
+}
+while (( $# )); do
+ case "$1" in
+  --help|-h) usage; exit 0;;
+  --status) action=status;;
+  --stop) action=stop;;
+  --logs) action=logs; if (( $#>1 )) && [[ "$2" != -* ]]; then logs="$2"; shift; else logs=200; fi;;
+  --repo) (( $#>1 )) || { print -u2 'gg: --repo needs a name'; exit 2; }; repo="$2"; shift;;
+  --repo=*) repo="${1#*=}";;
+  --port) (( $#>1 )) || { print -u2 'gg: --port needs a number'; exit 2; }; PORT="$2"; shift;;
+  --port=*) PORT="${1#*=}";;
+  -*) print -u2 "gg: unknown option $1"; exit 2;;
+  *) root="${1:A}";;
+ esac
+ shift
+done
+[[ -x "$BUN" ]] || { print -u2 "gg: missing local Bun runtime"; exit 1; }
+cd "$APP_DIR"
+case "$action" in
+ status) exec "$BUN" dist/server/cli.js daemon status;;
+ stop) exec "$BUN" dist/server/cli.js daemon stop;;
+ logs) exec "$BUN" dist/server/cli.js daemon logs "$logs";;
+esac
+[[ -d "$root" ]] || { print -u2 "gg: root is not a directory: $root"; exit 2; }
+[[ "$PORT" == <-> ]] && (( PORT > 0 && PORT < 65536 )) || { print -u2 'gg: invalid port'; exit 2; }
+env NODE_ENV=production PORT="$PORT" GIT_GRAPH_ROOT="$root" GIT_GRAPH_PORT_STRATEGY=strict "$BUN" dist/server/cli.js daemon start "$root" --host 127.0.0.1 --port "$PORT"
+url="http://127.0.0.1:$PORT/"
+if [[ -n "$repo" ]]; then url+="?repo=$(python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1],safe=""))' "$repo")"; fi
+print -rn -- "$url" | pbcopy 2>/dev/null || true
+print "gg: Git Graph ready at $url"
+print "gg: URL copied; ask the current Codex agent to open it in the right panel"

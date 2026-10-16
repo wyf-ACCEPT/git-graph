@@ -1,5 +1,13 @@
 # git-graph — AGENTS.md
 
+## Fork maintenance
+
+- This repository is maintained as `wyf-ACCEPT/git-graph`; keep `binaryplease/git-graph` as the upstream reference and preserve its license and attribution.
+- Develop and push to the owner's fork. Upstream synchronization is an explicit maintenance decision, not an automatic update step.
+- The tracked `gg` and `install.sh` scripts are the authoritative local launcher and recovery entry points. External command wrappers should delegate to them rather than duplicate their logic.
+- Keep `.codex/`, credentials, installed runtimes, dependencies, logs, and build output out of Git. Project notes and local audit evidence remain private.
+- See `docs/6x16-fork-maintenance.md` for the custom behavior and validation commands.
+
 A **local git commit-graph viewer**: a standalone web service that lists the
 git repositories at a served root (or the exact set a repositories file names)
 and renders their commit DAGs, and — its one

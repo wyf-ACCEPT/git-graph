@@ -27,7 +27,7 @@ export const GitCommitSchema = z.object({
         '`origin/main`, `tag: v1.0`. Empty for undecorated commits.',
     ),
   author: z.string().default('').describe('Author name (git `%an`).'),
-  date: z.string().default('').describe('Author date, `YYYY-MM-DD` (git `%ad` with `--date=short`).'),
+  date: z.string().default('').describe('Author timestamp in ISO 8601 with seconds and timezone (git `%ad` with `--date=iso-strict`).'),
   subject: z.string().default('').describe('Commit subject line (git `%s`).'),
 })
 export type GitCommit = z.infer<typeof GitCommitSchema>
@@ -408,6 +408,7 @@ export type CheckoutTarget = z.infer<typeof CheckoutTargetSchema>
 export const CheckoutRequestSchema = z.object({
   repo: z.string().default('').describe('Repository identifier: a `relativePath` from the repository listing.'),
   target: CheckoutTargetSchema,
+  requireClean: z.boolean().default(false).describe("Refuse before switching if the working tree or index has changes, including untracked files."),
 })
 export type CheckoutRequest = z.infer<typeof CheckoutRequestSchema>
 
@@ -428,5 +429,6 @@ export type CheckoutResult = z.infer<typeof CheckoutResultSchema>
 
 export const GitErrorSchema = z.object({
   error: z.string().describe('Human-readable description of what went wrong.'),
+  code: z.string().optional().describe('Machine-readable failure code when available.'),
 })
 export type GitError = z.infer<typeof GitErrorSchema>

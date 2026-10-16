@@ -9,9 +9,11 @@ import {
 } from 'react'
 import type { GitCommit } from '../../shared/git.schema'
 import { computeGraphLayout } from '../../shared/graphLayout'
+import { findHeadState } from '../../shared/gitActions'
 import { fuzzyHighlight, type FuzzyHighlight } from '../../shared/fuzzy'
 import { groupRefDecorations, type RefGroup } from '../../shared/refGroup'
 import { CommitRefRow } from './RefPill'
+import { formatCommitDate } from '../lib/commitDate'
 
 // The reusable commit-graph view: commits in, SVG + rows out. It owns no data
 // fetching and no app chrome, so it can be lifted into another host
@@ -22,6 +24,7 @@ export const ROW_HEIGHT = 28
 const LANE_GAP = 16
 const X_OFFSET = 16
 const NODE_RADIUS = 5
+const HEAD_NODE_RADIUS = 6
 
 // Distinct lane hues, cycled by lane index. The values live in the theme tokens
 // (`--lane-*` in theme.css) so they retune per color theme — the dark set reads
@@ -145,6 +148,8 @@ export type CommitGraphProps = {
    * the browser's menu.
    */
   onContextMenu?: (request: CommitContextMenuRequest) => void
+  /** Double-click a non-current local branch; the host checks cleanliness before switching. */
+  onCheckoutBranch?: (branchName: string) => void
 }
 
 export function CommitGraph({
@@ -156,9 +161,10 @@ export function CommitGraph({
   onSelectCommit,
   selectedDetail = null,
   onContextMenu,
+  onCheckoutBranch,
 }: CommitGraphProps) {
   const layout = useMemo(() => computeGraphLayout(commits), [commits])
-  const visibleHashes = useMemo(() => new Set(commits.map((commit) => commit.hash)), [commits])
+  const headHash = useMemo(() => findHeadState(commits, remotes).hash, [commits, remotes])
 
   const rows = useMemo(
     () =>
@@ -174,6 +180,7 @@ export function CommitGraph({
           subject,
           hash,
           author,
+          date: formatCommitDate(commit.date),
           refGroups,
           matched: subject.matched || hash.matched || author.matched,
         }
@@ -253,31 +260,18 @@ export function CommitGraph({
             strokeWidth={2}
           />
         ))}
-        {/* Halo marking the selected commit's node, drawn under the nodes. */}
-        {selectedRow >= 0 && (
-          <circle
-            cx={laneX(layout.placements[selectedRow]!.lane)}
-            cy={rowY(selectedRow)}
-            r={NODE_RADIUS + 4}
-            fill="none"
-            stroke={laneColor(layout.placements[selectedRow]!.lane)}
-            strokeWidth={1.5}
-            opacity={0.55}
-          />
-        )}
         {commits.map((commit, row) => {
           const lane = layout.placements[row]!.lane
-          const isMerge =
-            commit.parents.filter((parentHash) => visibleHashes.has(parentHash)).length > 1
+          const isHead = commit.hash === headHash
           return (
             <circle
               key={commit.hash}
               cx={laneX(lane)}
               cy={rowY(row)}
-              r={NODE_RADIUS}
-              fill={isMerge ? 'var(--color-canvas)' : laneColor(lane)}
-              stroke={isMerge ? laneColor(lane) : 'var(--color-canvas)'}
-              strokeWidth={isMerge ? 2 : 1.5}
+              r={isHead ? HEAD_NODE_RADIUS : NODE_RADIUS}
+              fill={isHead ? 'var(--color-canvas)' : laneColor(lane)}
+              stroke={isHead ? laneColor(lane) : 'var(--color-canvas)'}
+              strokeWidth={isHead ? 2.5 : 1.5}
             />
           )
         })}
@@ -286,7 +280,7 @@ export function CommitGraph({
       <div ref={rowsContainerRef} className="relative">
         {/* One wrapper per row keeps children[row] stable for scrollIntoView even
             when the inline detail is inserted after the selected row. */}
-        {rows.map(({ commit, subject, hash, author, refGroups, matched }, row) => (
+        {rows.map(({ commit, subject, hash, author, date, refGroups, matched }, row) => (
           <div key={`${commit.hash}-${row}`}>
             <button
               type="button"
@@ -329,6 +323,7 @@ export function CommitGraph({
                   in CommitRefRow rather than re-placed per surface (ADR-0027). */}
               <CommitRefRow
                 groups={refGroups}
+                onCheckoutBranch={onCheckoutBranch}
                 laneColor={laneColor(layout.placements[row]!.lane)}
                 onRefContextMenu={
                   onContextMenu &&
@@ -351,7 +346,7 @@ export function CommitGraph({
                 <span className="mx-1.5 opacity-40">·</span>
                 <FuzzySegments highlight={author} />
                 <span className="mx-1.5 opacity-40">·</span>
-                {commit.date}
+                <time dateTime={commit.date || undefined} title={date.title}>{date.text}</time>
               </span>
             </button>
             {/* Inline commit detail, expanded in-flow beneath its row. Indented

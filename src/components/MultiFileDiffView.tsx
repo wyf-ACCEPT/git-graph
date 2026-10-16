@@ -143,9 +143,10 @@ export type MultiFileDiffViewProps = {
    * distinct "open this file" control that invokes it with the file — for a host
    * that opens the changed file in its own surface (e.g. an in-app file browser).
    * It never hijacks the file-name jump link or a section's collapse toggle; omit
-   * it and the control is absent, exactly as the standalone app renders today.
+   * it and buildFileHref can supply the standalone preview link instead.
    */
   onOpenFile?: OpenFileHandler
+  buildFileHref?: (file: CommitFileChange) => string | null
   /**
    * Optional host seam (ADR-0026): the path of a file to reveal on open. When it
    * changes to a path present in {@link files}, that file's section is scrolled
@@ -164,6 +165,7 @@ export function MultiFileDiffView({
   mode = 'split',
   diffViewTheme = 'dark',
   onOpenFile,
+  buildFileHref,
   focusFilePath,
 }: MultiFileDiffViewProps) {
   const totalAdditions = files.reduce((sum, file) => sum + (file.additions ?? 0), 0)
@@ -222,7 +224,7 @@ export function MultiFileDiffView({
               </a>
               {/* The host's open-file seam (ADR-0031: on the row it opens), a
                   sibling of the jump link so it never triggers the anchor scroll. */}
-              {onOpenFile && <OpenFileButton file={file} onOpenFile={onOpenFile} className="mr-2" />}
+              {(onOpenFile || buildFileHref) && <OpenFileButton file={file} onOpenFile={onOpenFile} href={buildFileHref?.(file)} className="mr-2" />}
             </li>
           ))}
         </ul>

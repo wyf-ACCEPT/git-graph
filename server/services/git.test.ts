@@ -240,6 +240,7 @@ describe('createGitService', () => {
 
     const mergeCommit = commits[0]!
     expect(mergeCommit.subject).toBe('merge feature')
+    expect(mergeCommit.date).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/)
     expect(mergeCommit.parents).toHaveLength(2)
     expect(mergeCommit.refs).toContain('HEAD -> main')
     expect(mergeCommit.refs).toContain('tag: v1.0')
@@ -843,6 +844,42 @@ describe('checkout', () => {
     expect(outcome.result.branch).toBe('feature')
     expect(fixture.fullHashOf('feature').startsWith(outcome.result.head)).toBe(true)
     expect(outcome.result.message).toBe("Switched to branch 'feature'")
+    expect(fixture.currentBranch()).toBe('feature')
+  })
+
+  test('clean-only checkout switches a clean repository directly', async () => {
+    const fixture = createCheckoutFixture()
+    const outcome = await service().checkout(fixture.repositoryName, { kind: 'branch', name: 'feature' }, { requireClean: true })
+    expect(outcome.ok).toBe(true)
+    expect(fixture.currentBranch()).toBe('feature')
+  })
+
+  for (const dirty of ['unstaged', 'staged', 'untracked'] as const) {
+    test(`clean-only checkout refuses fresh ${dirty} changes before moving HEAD`, async () => {
+      const fixture = createCheckoutFixture()
+      const before = fixture.headHash()
+      const file = dirty === 'untracked' ? 'new-file.txt' : 'tracked.txt'
+      writeFileSync(join(fixture.repositoryPath, file), 'keep my work\n')
+      if (dirty === 'staged') runGit(fixture.repositoryPath, 'add', file)
+      const outcome = await service().checkout(fixture.repositoryName, { kind: 'branch', name: 'feature' }, { requireClean: true })
+      expect(outcome).toEqual({ ok: false, reason: 'worktree-dirty' })
+      expect(fixture.currentBranch()).toBe('main')
+      expect(fixture.headHash()).toBe(before)
+      // An explicit confirmed switch can still carry a non-conflicting untracked file.
+      if (dirty === 'untracked') {
+        const confirmed = await service().checkout(fixture.repositoryName, { kind: 'branch', name: 'feature' })
+        expect(confirmed.ok).toBe(true)
+        expect(fixture.currentBranch()).toBe('feature')
+      }
+    })
+  }
+
+  test('ignored files do not require confirmation', async () => {
+    const fixture = createCheckoutFixture()
+    writeFileSync(join(fixture.repositoryPath, '.git/info/exclude'), 'ignored.cache\n')
+    writeFileSync(join(fixture.repositoryPath, 'ignored.cache'), 'cache\n')
+    const outcome = await service().checkout(fixture.repositoryName, { kind: 'branch', name: 'feature' }, { requireClean: true })
+    expect(outcome.ok).toBe(true)
     expect(fixture.currentBranch()).toBe('feature')
   })
 

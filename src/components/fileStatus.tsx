@@ -48,30 +48,39 @@ export type OpenFileHandler = (file: CommitFileChange) => void
  * The "open this file in the host's own surface" control — the callback seam a
  * host (e.g. an in-app file browser) wires through `onOpenFile`. It is a DISTINCT
  * affordance from the primary file-name click and from any open-diff-in-new-tab
- * link, so it never hijacks either; it is rendered only when a host supplies the
- * handler and sits on the row it opens (ADR-0031). Shared once (ADR-0026/0028) by
+ * link, so it never hijacks either; a host callback or standalone preview href
+ * supplies the destination on the row it opens (ADR-0031). Shared once (ADR-0026/0028) by
  * every changed-file list rather than re-declared per surface — the icon and its
  * interaction-state styling stay identical wherever the seam appears.
  */
 export function OpenFileButton({
-  file,
-  onOpenFile,
-  className = '',
+  file, onOpenFile, href, className = '',
 }: {
   file: CommitFileChange
-  onOpenFile: OpenFileHandler
+  onOpenFile?: OpenFileHandler
+  href?: string | null
   className?: string
 }) {
-  return (
-    <button
-      type="button"
-      className={`inline-flex shrink-0 cursor-pointer items-center rounded p-0.5 text-faint transition-colors hover:bg-rowhover hover:text-fg ${className}`}
-      onClick={() => onOpenFile(file)}
-      title={`open ${file.path}`}
-      aria-label={`open ${file.path}`}
-    >
+  const style = `inline-flex shrink-0 cursor-pointer items-center rounded p-0.5 text-faint transition-colors hover:bg-rowhover hover:text-fg focus-visible:outline-2 focus-visible:outline-accent ${className}`
+  if (onOpenFile) return (
+    <button type="button" className={style} onClick={() => onOpenFile(file)}
+      title={`open ${file.path}`} aria-label={`open ${file.path}`}>
       <IconFileSymlink size={14} aria-hidden />
     </button>
+  )
+  if (!href) return null
+  if (file.binary) return (
+    <span className={`inline-flex shrink-0 items-center rounded p-0.5 text-faint opacity-45 ${className}`}
+      role="img" title={`${file.path} is binary — text preview is unavailable`}
+      aria-label={`${file.path} is binary, no text preview`}>
+      <IconFileSymlink size={14} aria-hidden />
+    </span>
+  )
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={style}
+      title={`open ${file.path} full file in a new tab`} aria-label={`open ${file.path} full file in a new tab`}>
+      <IconFileSymlink size={14} aria-hidden />
+    </a>
   )
 }
 

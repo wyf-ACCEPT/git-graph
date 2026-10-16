@@ -12,6 +12,7 @@ import {
 } from './fileStatus'
 import { groupRefDecorations, refGroupCopyValue } from '../../shared/refGroup'
 import { RefPill } from './RefPill'
+import { formatCommitDate } from '../lib/commitDate'
 
 // The commit detail surface: one commit in, its metadata, message and changed
 // files out. Like CommitGraph it fetches nothing and owns no app chrome — the
@@ -24,17 +25,6 @@ const MODIFIER_HINT =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform)
     ? 'Cmd'
     : 'Ctrl'
-
-/** ISO 8601 from git → the local, readable form, with the raw value as a tooltip. */
-function formatCommitDate(isoDate: string) {
-  if (!isoDate) return { text: '—', title: 'git reported no date' }
-  const parsed = new Date(isoDate)
-  if (Number.isNaN(parsed.getTime())) return { text: isoDate, title: isoDate }
-  return {
-    text: parsed.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }),
-    title: isoDate,
-  }
-}
 
 /**
  * The commit message as git stores it: the subject line, then the body below a
@@ -97,6 +87,7 @@ type FileChangeRowProps = {
   diffViewTheme: 'light' | 'dark'
   /** The host's open-file seam; when set, the row shows a distinct open-file control. */
   onOpenFile?: OpenFileHandler
+  fileHref?: string | null
   /**
    * The host's open-this-file's-diff seam (ADR-0026). When set it takes
    * precedence over {@link diffHref}: the external-link control becomes a real
@@ -124,6 +115,7 @@ function FileChangeRow({
   diffError,
   diffViewTheme,
   onOpenFile,
+  fileHref,
   onOpenFileDiff,
 }: FileChangeRowProps) {
   const description = describeFileChange(file)
@@ -221,7 +213,7 @@ function FileChangeRow({
         )}
         {/* The host's open-file seam (ADR-0031: on the row it opens), distinct
             from the inline-diff toggle and the open-in-new-tab link above. */}
-        {onOpenFile && <OpenFileButton file={file} onOpenFile={onOpenFile} />}
+        {(onOpenFile || fileHref) && <OpenFileButton file={file} onOpenFile={onOpenFile} href={fileHref} />}
         <CopyButton value={file.path} label="file path" />
         {file.binary ? (
           <IconBinary size={13} className="shrink-0 text-faint" aria-label="binary file" />
@@ -272,6 +264,7 @@ export type CommitDetailPanelProps = {
    * scheme; the panel only turns branch names into links.
    */
   buildCompareHref: (branchName: string) => string | null
+  onCheckoutBranch?: (branchName: string) => void
   /** The diff for {@link expandedFilePath}; the host owns the fetching. */
   fileDiff: FileDiffPayload | null
   isLoadingFileDiff: boolean
@@ -289,10 +282,12 @@ export type CommitDetailPanelProps = {
    * Optional host seam (ADR-0026): when provided, each changed-file row shows a
    * distinct "open this file" control that invokes it with the file — for a host
    * that opens the file in its own surface (e.g. an in-app file browser). It never
-   * hijacks the row's inline-diff disclosure or its open-in-new-tab link; omit it
-   * and the control is absent, exactly as the standalone app renders today.
+   * hijacks the row's inline-diff disclosure or its open-in-new-tab link. Without
+   * this callback, buildFileHref can supply the standalone full-file preview.
    */
   onOpenFile?: OpenFileHandler
+  /** Full-file link when no host open-file callback is supplied. */
+  buildFileHref?: (filePath: string) => string | null
   /**
    * Optional host seam (ADR-0026): open one file's diff in the host's own surface
    * (e.g. an in-app modal) instead of a new tab. When set it takes precedence over
@@ -347,12 +342,14 @@ export function CommitDetailPanel({
   buildFileDiffHref,
   buildCommitDiffHref,
   buildCompareHref,
+  onCheckoutBranch,
   fileDiff,
   isLoadingFileDiff,
   fileDiffError,
   onClose,
   diffViewTheme = 'dark',
   onOpenFile,
+  buildFileHref,
   onOpenFileDiff,
   onOpenCommitDiff,
   onOpenCompare,
@@ -531,7 +528,7 @@ export function CommitDetailPanel({
                           key={`${refGroup.kind}:${refGroup.name}`}
                           className="inline-flex items-center gap-0.5"
                         >
-                          <RefPill group={refGroup} />
+                          <RefPill group={refGroup} onCheckoutBranch={onCheckoutBranch} />
                           {/* Copy a ref that resolves: `main` for a branch (with
                               or without remotes), `origin/feature` for one that
                               exists only on remotes. Not the pill's label — that
@@ -640,6 +637,7 @@ export function CommitDetailPanel({
                       diffError={isExpanded ? fileDiffError : null}
                       diffViewTheme={diffViewTheme}
                       onOpenFile={onOpenFile}
+                      fileHref={buildFileHref?.(file.path)}
                     />
                   )
                 })}

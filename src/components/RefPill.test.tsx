@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { cleanup, render } from '@testing-library/react'
+import { cleanup, fireEvent, render } from '@testing-library/react'
 import { groupRefDecorations } from '../../shared/refGroup'
 import { CommitRefRow } from './RefPill'
 
@@ -78,5 +78,29 @@ describe('CommitRefRow', () => {
   test('no refs renders nothing at all', () => {
     const { container } = render(<CommitRefRow groups={[]} laneColor="var(--lane-0)" />)
     expect(container.innerHTML).toBe('')
+  })
+})
+
+
+describe('branch double-click shortcut', () => {
+  test('only non-current local branches request checkout', () => {
+    const requested: string[] = []
+    const { container } = render(<CommitRefRow
+      groups={groupRefDecorations(['HEAD -> main', 'feature', 'origin/published', 'tag: v1'], ['origin'])}
+      laneColor="var(--lane-0)" onCheckoutBranch={(name) => requested.push(name)}
+    />)
+    for (const pill of pillsOf(container)) fireEvent.doubleClick(pill)
+    expect(requested).toEqual(['feature'])
+  })
+
+  test('the remote segment of a unified local branch switches that local branch', () => {
+    const requested: string[] = []
+    const { container } = render(<CommitRefRow
+      groups={groupRefDecorations(['feature', 'origin/feature'], ['origin'])}
+      laneColor="var(--lane-0)" onCheckoutBranch={(name) => requested.push(name)}
+    />)
+    fireEvent.doubleClick(container.querySelector('.ref-segment-remote')!)
+    expect(requested).toEqual(['feature'])
+    expect(pillsOf(container)[0]!.getAttribute('title')).toContain('Double-click to switch branch')
   })
 })

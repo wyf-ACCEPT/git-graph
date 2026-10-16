@@ -6,6 +6,7 @@ import { loadHighlighter } from './lib/highlighter'
 import { parseWorkingParams } from './lib/diffRoutes'
 import { useRepositoryChanges } from './lib/repositoryChanges'
 import { useTheme } from './lib/theme'
+import { filePreviewHref } from './lib/filePreview'
 import { DiffTabFrame } from './components/DiffTabFrame'
 import { MultiFileDiffView } from './components'
 import { ThemeToggle } from './components/ThemeToggle'
@@ -101,6 +102,7 @@ export function WorkingTreePage() {
           files={working.files}
           filesTruncated={working.filesTruncated}
           loadFileDiff={loadFileDiff}
+          buildFileHref={(file) => filePreviewHref({ kind: 'working', repo: params.repositoryRelativePath, path: file.path })}
           emptyMessage="Working tree clean — no uncommitted changes."
           diffViewTheme={resolvedTheme}
         />

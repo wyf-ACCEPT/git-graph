@@ -5,6 +5,7 @@ import { fetchBranches, fetchCompareFileDiff, fetchCompareSummary } from './lib/
 import { loadHighlighter } from './lib/highlighter'
 import { compareHref, parseCompareParams } from './lib/diffRoutes'
 import { useTheme } from './lib/theme'
+import { filePreviewHref } from './lib/filePreview'
 import { DiffTabFrame } from './components/DiffTabFrame'
 import { MultiFileDiffView } from './components'
 import { ThemeToggle } from './components/ThemeToggle'
@@ -145,6 +146,7 @@ export function ComparePage() {
           files={summary.files}
           filesTruncated={summary.filesTruncated}
           loadFileDiff={loadFileDiff}
+          buildFileHref={(file) => params === null ? null : filePreviewHref({ kind: 'compare', repo: params.repositoryRelativePath, head: params.headBranch, base: params.baseBranch, path: file.path })}
           emptyMessage={`${summary.head} has no changes relative to ${summary.base}.`}
           diffViewTheme={resolvedTheme}
         />

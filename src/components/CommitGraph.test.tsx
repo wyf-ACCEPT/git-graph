@@ -27,6 +27,32 @@ const commits: GitCommit[] = [
 
 const marker = <div>INLINE_DETAIL_MARKER</div>
 
+describe('CommitGraph timestamps', () => {
+  test('keeps the year for commits outside the current year', () => {
+    const year = new Date().getFullYear() - 1
+    const timestamp = new Date(year, 6, 21, 12, 20, 37).toISOString()
+    const { container } = render(<CommitGraph commits={[commit({ date: timestamp })]} remotes={[]} />)
+    const time = container.querySelector('time')!
+    expect(time.textContent).toBe(`${year}-07-21 12:20:37`)
+    expect(time.title).toContain(timestamp)
+  })
+
+  test('shows seconds and preserves the original offset in the tooltip', () => {
+    const timestamp = new Date(new Date().getFullYear(), 6, 21, 12, 20, 37).toISOString()
+    const { container } = render(<CommitGraph commits={[commit({ date: timestamp })]} remotes={[]} />)
+    const time = container.querySelector('time')!
+    expect(time.textContent).toBe('07-21 12:20:37')
+    expect(time.dateTime).toBe(timestamp)
+    expect(time.title).toContain(timestamp)
+    expect(time.title).toContain('displayed in UTC')
+  })
+
+  test('keeps legacy date-only rows without inventing midnight', () => {
+    const { container } = render(<CommitGraph commits={[commit({ date: `${new Date().getFullYear()}-07-21` })]} remotes={[]} />)
+    expect(container.querySelector('time')!.textContent).toBe('07-21')
+  })
+})
+
 describe('CommitGraph inline detail slot', () => {
   test('renders the detail when a row is selected and a detail is provided', () => {
     render(<CommitGraph commits={commits} remotes={[]} selectedHash="aaa1111" selectedDetail={marker} />)
@@ -306,5 +332,68 @@ describe('CommitGraph context menu', () => {
     expect(rowEvent.defaultPrevented).toBe(false)
     expect(pillEvent.defaultPrevented).toBe(false)
     expect(rowOf('parent').hasAttribute('aria-keyshortcuts')).toBe(false)
+  })
+})
+
+
+describe('CommitGraph branch shortcut propagation', () => {
+  test('keeps commit details stationary and requests checkout once on a branch double-click', () => {
+    const selected: string[] = [], requested: string[] = []
+    const { container } = render(<CommitGraph
+      commits={[commit({ refs: ['feature'] })]} remotes={[]}
+      onSelectCommit={(value) => selected.push(value.hash)}
+      onCheckoutBranch={(name) => requested.push(name)}
+    />)
+    const pill = container.querySelector('.ref-pill')!
+    fireEvent.click(pill, { detail: 1 })
+    fireEvent.click(pill, { detail: 2 })
+    fireEvent.doubleClick(pill)
+    expect(selected).toEqual([])
+    expect(requested).toEqual(['feature'])
+  })
+})
+
+
+describe('CommitGraph HEAD node glyph', () => {
+  test('only HEAD is large and hollow; selecting an older merge adds no extra ring', () => {
+    const history = [
+      commit({ hash: 'head111', refs: ['HEAD -> main'], parents: ['merge11'] }),
+      commit({ hash: 'merge11', parents: ['left111', 'right11'] }),
+      commit({ hash: 'left111' }),
+      commit({ hash: 'right11' }),
+    ]
+    const { container } = render(<CommitGraph commits={history} remotes={[]} selectedHash="merge11" />)
+    const nodes = [...container.querySelectorAll('svg circle')]
+    expect(nodes).toHaveLength(4)
+    expect(nodes[0]!.getAttribute('r')).toBe('6')
+    expect(nodes[0]!.getAttribute('fill')).toBe('var(--color-canvas)')
+    for (const node of nodes.slice(1)) {
+      expect(node.getAttribute('r')).toBe('5')
+      expect(node.getAttribute('fill')).not.toBe('var(--color-canvas)')
+      expect(node.getAttribute('fill')).not.toBe('none')
+    }
+  })
+
+  test('a detached HEAD is hollow but a remote HEAD decoration is not', () => {
+    const { container } = render(<CommitGraph commits={[
+      commit({ hash: 'remote1', refs: ['origin/HEAD'] }),
+      commit({ hash: 'detach1', refs: ['HEAD'] }),
+    ]} remotes={['origin']} />)
+    const nodes = container.querySelectorAll('svg circle')
+    expect(nodes[0]!.getAttribute('r')).toBe('5')
+    expect(nodes[1]!.getAttribute('r')).toBe('6')
+    expect(nodes[1]!.getAttribute('fill')).toBe('var(--color-canvas)')
+  })
+
+  test('the hollow node follows HEAD when branch decorations refresh', () => {
+    const first = commit({ hash: 'first11', refs: ['HEAD -> main'] })
+    const second = commit({ hash: 'second1', refs: ['feature'] })
+    const { container, rerender } = render(<CommitGraph commits={[first, second]} remotes={[]} />)
+    rerender(<CommitGraph commits={[
+      { ...first, refs: ['main'] }, { ...second, refs: ['HEAD -> feature'] },
+    ]} remotes={[]} />)
+    const nodes = container.querySelectorAll('svg circle')
+    expect(nodes[0]!.getAttribute('r')).toBe('5')
+    expect(nodes[1]!.getAttribute('r')).toBe('6')
   })
 })

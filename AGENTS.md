@@ -492,10 +492,10 @@ Currently 342 tests across 27 files.
   the row *immediately* before the pills, naming the branch in its tooltip *and*
   its `aria-label`. That adjacency is the whole meaning — the ring says nothing
   on its own — which is why the cluster, not the ring, is the shared unit.
-  That ring is never drawn on the SVG commit node — `CommitGraph`
-  already rings the *selected* commit there, and a second ring would make
-  "selected" and "checked out" the same shape. A detached HEAD is on no branch,
-  so it leaves the row unmarked and speaks through its own `HEAD` pill.
+  The SVG graph separately renders only the actual HEAD commit as a larger
+  hollow node; all other commits, including merges, are small filled nodes.
+  Selection uses the row background rather than another node ring. Detached
+  HEAD retains the hollow graph node and its `HEAD` pill, without a branch marker.
 - ADR-0025: disabled controls stay visible and explain themselves (`title`/placeholder).
 - Git-action context menu (issue #2): right-click a commit row or ref pill, or
   Shift+F10 / the context-menu key on a focused row; the browser's menu is
@@ -522,6 +522,7 @@ Currently 342 tests across 27 files.
 - Theme: light/dark/system toggle in every shell's header (default `system`),
   persisted (ADR-0029) and applied via `[data-theme]`; a pre-paint shim in
   `index.html` avoids a flash.
+- Branch double-click shortcut (local customization, 2026-10-16): a non-current local branch label can switch directly only after a fresh server-side clean-worktree check. Dirty index/worktree/untracked files open the existing confirmation dialog. Context-menu checkouts still confirm; tags and remote-only refs have no double-click shortcut. A failed direct checkout stays visible in the status strip.
 - Commit detail (ADR-0031): opens inline beneath the selected row by default,
   with a persisted panel-header toggle back to the docked right sidebar.
 - Commit detail order: metadata (commit · author · dates · parents · refs), then
@@ -534,6 +535,7 @@ Currently 342 tests across 27 files.
   line carries weight but is never re-wrapped or re-punctuated: the block's text
   is built as one string and sliced, so what renders is what git stored. The
   sidebar's header keeps the subject too; that repeat is accepted.
+- Full-file preview (local customization, 2026-10-16): changed-file rows offer a separate file icon beside diff and copy controls. It opens `/file` in a new browser tab, showing complete escaped read-only text from the selected commit/comparison/worktree context via the existing membership-validated diff APIs. Deleted files show the old source with a label; empty, unavailable, binary, and truncated sources are distinct. Binary text-preview actions stay disabled and explained. Embedding hosts retain precedence through `onOpenFile`; the standalone fallback uses `buildFileHref`. This browser preview is not the Codex native editor.
 - Diff tabs (ADR-0031): a changed file, a whole commit, and a branch (against
   the default branch unless a base is chosen) each open in a standalone tab —
   via cmd/ctrl/middle-click on the file row, or the visible external-link /

@@ -29,6 +29,8 @@ export type RefPillProps = {
   /** One grouped ref — build these with `groupRefDecorations(commit.refs, remotes)`. */
   group: RefGroup
   children?: ReactNode
+  /** Pointer shortcut; keyboard users retain the row/context-menu checkout action. */
+  onCheckoutBranch?: (branchName: string) => void
   /**
    * Opens the host's context menu for this ref. When set, a right-click on the
    * pill opens it instead of the browser's menu, and does not bubble on to the
@@ -55,7 +57,7 @@ export type RefPillProps = {
  * agreement with anything — it is simply that remote's branch, so it keeps the
  * qualified name git printed (`origin/feature`) and gains no segments.
  */
-export function RefPill({ group, children, onContextMenu }: RefPillProps) {
+export function RefPill({ group, children, onContextMenu, onCheckoutBranch }: RefPillProps) {
   const { text, markerRemotes } = refGroupLabel(group)
   // A checked-out branch reads as HEAD, the way it did before its remotes were
   // folded in — the marker is additive, it never replaces the kind.
@@ -63,6 +65,7 @@ export function RefPill({ group, children, onContextMenu }: RefPillProps) {
   // Only a local branch is ever *checked out*: a detached HEAD is on no branch
   // at all and names itself `HEAD` in the pill already.
   const isCheckedOut = group.kind === 'branch' && group.isHead
+  const canCheckout = group.kind === 'branch' && !group.isHead && onCheckoutBranch !== undefined
   const isSegmented = markerRemotes.length > 0
   const className = ['ref-pill', `ref-${kindClass}`]
   if (isSegmented) className.push('ref-segmented')
@@ -76,7 +79,16 @@ export function RefPill({ group, children, onContextMenu }: RefPillProps) {
   return (
     <span
       className={className.join(' ')}
-      title={refGroupTitle(group)}
+      title={refGroupTitle(group) + (canCheckout ? '\nDouble-click to switch branch; uncommitted changes require confirmation.' : '')}
+      onClick={canCheckout ? (event) => {
+        // Keep the label stationary between clicks; expanding the row can move it.
+        event.stopPropagation()
+      } : undefined}
+      onDoubleClick={canCheckout ? (event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        onCheckoutBranch!(group.name)
+      } : undefined}
       onContextMenu={
         onContextMenu &&
         ((event) => {
@@ -114,9 +126,8 @@ type CheckedOutMarkerProps = {
  * HEAD in the message column. It marks the row even when the head pill has
  * scrolled out of view horizontally, which pill state alone cannot do.
  *
- * Deliberately *not* drawn on the SVG commit node: `CommitGraph` already rings
- * the **selected** commit there, and a second ring would make "selected" and
- * "checked out" the same shape.
+ * This label-adjacent marker complements the larger hollow HEAD node in the
+ * graph gutter; selection is indicated by the row background, not a node halo.
  *
  * Module-internal on purpose — a ring adrift from the refs it qualifies says
  * nothing, so {@link CommitRefRow} is what surfaces render and what the barrel
@@ -150,6 +161,7 @@ export type CommitRefRowProps = {
   laneColor: string
   /** Opens the host's context menu for one of the pills; see {@link RefPillProps.onContextMenu}. */
   onRefContextMenu?: (group: RefGroup, event: MouseEvent<HTMLElement>) => void
+  onCheckoutBranch?: (branchName: string) => void
 }
 
 /**
@@ -170,16 +182,15 @@ export type CommitRefRowProps = {
  * nightshift-ui's panel — and a host aligning its own non-commit row beside the
  * graph gets the same cluster instead of a hand-rolled dot that drifts from it.
  */
-export function CommitRefRow({ groups, laneColor, onRefContextMenu }: CommitRefRowProps) {
+export function CommitRefRow({ groups, laneColor, onRefContextMenu, onCheckoutBranch }: CommitRefRowProps) {
   if (groups.length === 0) return null
   const checkedOutBranch =
     groups.find((group) => group.kind === 'branch' && group.isHead)?.name ?? null
 
   return (
     <span className="inline-flex shrink-0 items-center gap-1.5">
-      {/* The ring leads the row's refs, in the row and not on the SVG node —
-          that ring marks the *selected* commit, and two rings of one shape
-          would blur the two. */}
+      {/* This ring names the checked-out branch beside its refs; the graph
+          gutter separately marks the current HEAD commit. */}
       {checkedOutBranch !== null && (
         <CheckedOutMarker branchName={checkedOutBranch} color={laneColor} />
       )}
@@ -187,6 +198,7 @@ export function CommitRefRow({ groups, laneColor, onRefContextMenu }: CommitRefR
         <RefPill
           key={`${group.kind}:${group.name}`}
           group={group}
+          onCheckoutBranch={onCheckoutBranch}
           onContextMenu={onRefContextMenu && ((event) => onRefContextMenu(group, event))}
         />
       ))}

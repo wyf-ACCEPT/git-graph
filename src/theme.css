@@ -189,8 +189,7 @@ mark {
 }
 /* The row-level half of that signal — a lane-coloured ring before the row's ref
    pills (the border colour is set inline from the row's lane). It lives in the
-   row, never on the SVG commit node, where the selection halo already owns the
-   ring shape. */
+   row, complementing the larger hollow HEAD node in the graph gutter. */
 .ref-head-dot {
   /* Declared even though `CommitGraph` puts it in an inline-flex parent, where a
      flex item's display is blown away anyway: the component is barrel-exported so

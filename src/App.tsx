@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { IconCircleCheck, IconAlertCircle, IconGitMerge, IconSearch, IconX } from '@tabler/icons-react'
 import { describeCheckout, findHeadState } from '../shared/gitActions'
 import type {
@@ -13,6 +13,7 @@ import type {
 } from '../shared/git.schema'
 import {
   checkout,
+  GitRequestError,
   fetchBranches,
   fetchCommitDetail,
   fetchCommitLog,
@@ -23,6 +24,7 @@ import {
 import { commitDiffHref, compareHref, fileDiffHref, workingHref } from './lib/diffRoutes'
 import { loadHighlighter } from './lib/highlighter'
 import { useTheme } from './lib/theme'
+import { filePreviewHref } from './lib/filePreview'
 import { useDetailLayout } from './lib/detailLayout'
 import { announceRepositoryChange, useRepositoryChanges } from './lib/repositoryChanges'
 import {
@@ -38,8 +40,8 @@ import {
 } from './components'
 
 // How long a success notice stays before it clears itself. Failures of a git
-// write never reach here — they stay in the confirmation dialog with git's
-// stderr until the user acts on them.
+// write stay visible until dismissed, either in the confirmation dialog or
+// as an error notice for the direct double-click shortcut.
 const NOTICE_MILLISECONDS = 6000
 import { ThemeToggle } from './components/ThemeToggle'
 import { DetailLayoutToggle } from './components/DetailLayoutToggle'
@@ -91,6 +93,10 @@ export function App() {
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const [notice, setNotice] = useState<GitActionNotice | null>(null)
+  const [pendingCheckoutDirty, setPendingCheckoutDirty] = useState(false)
+  const checkoutInFlight = useRef(false)
+  const currentRepository = useRef(selectedRepository)
+  currentRepository.current = selectedRepository
 
   // Loading a syntax grammar the first time a diff is expanded costs about half
   // a second; warming the highlighter here spends it while nobody is waiting.
@@ -296,37 +302,62 @@ export function App() {
     [selectedRepository],
   )
 
-  // A checkout never runs from the menu directly: the menu names the target, the
-  // dialog states what will happen to which repository, and only its confirm
-  // runs git.
+  // Context-menu actions retain confirmation. Double-clicking a local branch
+  // opts into the server's fresh clean-worktree check before direct execution.
   const requestCheckout = useCallback((target: CheckoutTarget) => {
     setCheckoutError(null)
+    setPendingCheckoutDirty(false)
     setPendingCheckout(target)
   }, [])
 
   const cancelCheckout = useCallback(() => {
     setPendingCheckout(null)
+    setPendingCheckoutDirty(false)
     setCheckoutError(null)
   }, [])
 
-  async function confirmCheckout() {
-    if (selectedRepository === null || pendingCheckout === null) return
+  async function runCheckout(target: CheckoutTarget, requireClean = false) {
+    const repository = selectedRepository
+    if (repository === null || checkoutInFlight.current) return
+    checkoutInFlight.current = true
     setIsCheckingOut(true)
     setCheckoutError(null)
     try {
-      const result = await checkout(selectedRepository, pendingCheckout)
+      const result = await checkout(repository, target, { requireClean })
+      announceRepositoryChange(repository)
+      if (currentRepository.current !== repository) return
       setPendingCheckout(null)
+      setPendingCheckoutDirty(false)
       setNotice({ tone: 'success', text: result.message || `HEAD is now at ${result.head}` })
-      // Everything that shows this repository is stale now: this tab refetches,
-      // and the others (an open /working tab) hear about it.
       setRepositoryVersion((version) => version + 1)
-      announceRepositoryChange(selectedRepository)
     } catch (error) {
-      // Kept in the dialog, verbatim — for a refusal this is git's own stderr.
-      setCheckoutError(error instanceof Error ? error.message : 'the checkout failed')
+      if (currentRepository.current !== repository) return
+      if (requireClean && error instanceof GitRequestError && error.code === 'worktree-dirty') {
+        setPendingCheckoutDirty(true)
+        setPendingCheckout(target)
+        // Refresh the dirty badge too; the refusal itself is already authoritative.
+        void fetchWorkingTree(repository).then((tree) => {
+          if (currentRepository.current === repository) setWorkingTree(tree)
+        }).catch(() => {})
+      } else {
+        const message = error instanceof Error ? error.message : 'the checkout failed'
+        if (requireClean) setNotice({ tone: 'error', text: message })
+        else setCheckoutError(message)
+      }
     } finally {
+      checkoutInFlight.current = false
       setIsCheckingOut(false)
     }
+  }
+
+  function confirmCheckout() {
+    if (pendingCheckout !== null) void runCheckout(pendingCheckout)
+  }
+
+  function checkoutBranch(branchName: string) {
+    if (pendingCheckout !== null || branchName === headState.branch) return
+    setContextMenu(null)
+    void runCheckout({ kind: 'branch', name: branchName }, true)
   }
 
   const loadedHashes = useMemo(() => new Set(commits.map((commit) => commit.hash)), [commits])
@@ -389,8 +420,12 @@ export function App() {
         expandedFilePath={expandedFilePath}
         onToggleFile={handleToggleFile}
         buildFileDiffHref={buildFileDiffHref}
+        buildFileHref={(path) => selectedRepository === null || selectedCommitHash === null ? null : filePreviewHref({
+          kind: 'commit', repo: selectedRepository, hash: commitDetail?.fullHash || selectedCommitHash, path,
+        })}
         buildCommitDiffHref={buildCommitDiffHref}
         buildCompareHref={buildCompareHref}
+        onCheckoutBranch={isCheckingOut ? undefined : checkoutBranch}
         fileDiff={fileDiff}
         isLoadingFileDiff={isLoadingFileDiff}
         fileDiffError={fileDiffError}
@@ -518,6 +553,7 @@ export function App() {
               // panel docks to the right instead.
               selectedDetail={detailLayout === 'inline' ? detailPanel : null}
               onContextMenu={setContextMenu}
+              onCheckoutBranch={isCheckingOut ? undefined : checkoutBranch}
             />
           )}
           </div>
@@ -556,8 +592,7 @@ export function App() {
             <span className="inline-block h-[9px] w-[9px] rounded-full bg-accent" /> commit
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-[9px] w-[9px] rounded-full border-2 border-dim" /> merge
-            (2+ parents)
+            <span className="inline-block h-[13px] w-[13px] rounded-full border-2 border-accent" /> HEAD (current commit)
           </span>
           <span>color = lane / branch column</span>
           {graphStats.matchCount === 0 && hasCommits && <span>no rows match your search</span>}
@@ -585,7 +620,7 @@ export function App() {
         <ConfirmActionDialog
           description={describeCheckout(pendingCheckout, {
             repositoryName,
-            hasUncommittedChanges: (workingTree?.files.length ?? 0) > 0,
+            hasUncommittedChanges: pendingCheckoutDirty || (workingTree?.files.length ?? 0) > 0,
           })}
           isRunning={isCheckingOut}
           error={checkoutError}

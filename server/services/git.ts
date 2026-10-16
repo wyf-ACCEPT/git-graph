@@ -100,6 +100,7 @@ export type CheckoutFailureReason =
   | 'unknown-commit'
   | 'invalid-hash'
   | 'checkout-refused'
+  | 'worktree-dirty'
   | 'git-failed'
 
 export type CheckoutOutcome =
@@ -884,13 +885,24 @@ export function createGitService({ repositories: repositorySet }: { repositories
    * carrying git's stderr verbatim, so the user reads git's reason rather than
    * ours.
    */
-  async function checkout(repositoryIdentifier: string, target: CheckoutTarget): Promise<CheckoutOutcome> {
+  async function checkout(
+    repositoryIdentifier: string,
+    target: CheckoutTarget,
+    { requireClean = false }: { requireClean?: boolean } = {},
+  ): Promise<CheckoutOutcome> {
     const repository = await resolveRepository(repositoryIdentifier)
     if (!repository) return { ok: false, reason: 'unknown-repository' }
 
     const repositoryPath = repository.absolutePath
     const resolved = await resolveCheckout(repositoryPath, target)
     if (!resolved.ok) return resolved
+
+    // Check on disk immediately before the switch, never trust a cached UI badge.
+    if (requireClean) {
+      const status = await runGit(repositoryPath, ['status', '--porcelain=v1', '-z', '--untracked-files=all', '--ignore-submodules=none'])
+      if (status.exitCode !== 0) return { ok: false, reason: 'git-failed', detail: status.stderr.trim() }
+      if (status.stdout.length > 0) return { ok: false, reason: 'worktree-dirty' }
+    }
 
     const switched = await runGit(repositoryPath, checkoutArguments(resolved.checkout))
     if (switched.exitCode !== 0) {

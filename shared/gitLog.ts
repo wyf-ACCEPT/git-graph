@@ -12,10 +12,19 @@ export const COMMIT_LOG_PRETTY_FORMAT = ['%h', '%H', '%p', '%d', '%an', '%ad', '
 
 export const COMMIT_LOG_ARGUMENTS = [
   'log',
-  '--all',
+  // `--all` also traverses refs/notes/* when tools such as git-ai store
+  // metadata as Git notes. Notes are commits internally, but they are not
+  // project history and must not appear in the graph. Enumerate code refs
+  // explicitly instead.
+  '--branches',
+  '--remotes',
+  '--tags',
+  // An unborn HEAD is normal for a repository with no commits yet.
+  '--ignore-missing',
+  'HEAD',
   '--topo-order',
   `--pretty=format:${COMMIT_LOG_PRETTY_FORMAT}`,
-  '--date=short',
+  '--date=iso-strict',
   // `%d` honours `log.decorate`, and a user with `log.decorate=full` in their
   // config gets `refs/heads/main, refs/remotes/origin/main` — which the ref
   // grouper (`shared/refGroup.ts`) reads as two unrelated local branches. The

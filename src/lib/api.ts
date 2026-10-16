@@ -22,17 +22,26 @@ import {
   type WorkingTree,
 } from '../../shared/git.schema'
 
+export class GitRequestError extends Error {
+  constructor(message: string, readonly code?: string) {
+    super(message)
+    this.name = 'GitRequestError'
+  }
+}
+
 async function requestJson(path: string, init?: RequestInit): Promise<unknown> {
   const response = await fetch(path, init)
   if (!response.ok) {
     let message = `request failed with status ${response.status}`
+    let code: string | undefined
     try {
-      const body = (await response.json()) as { error?: unknown }
+      const body = (await response.json()) as { error?: unknown; code?: unknown }
       if (typeof body.error === 'string') message = body.error
+      if (typeof body.code === 'string') code = body.code
     } catch {
       // non-JSON error body — keep the status message
     }
-    throw new Error(message)
+    throw new GitRequestError(message, code)
   }
   return response.json()
 }
@@ -119,7 +128,11 @@ export async function fetchWorkingFileDiff(
  * refusal the thrown message is the server's, which for a checkout git refused
  * is git's own stderr.
  */
-export async function checkout(repositoryRelativePath: string, target: CheckoutTarget): Promise<CheckoutResult> {
+export async function checkout(
+  repositoryRelativePath: string,
+  target: CheckoutTarget,
+  { requireClean = false }: { requireClean?: boolean } = {},
+): Promise<CheckoutResult> {
   return CheckoutResultSchema.parse(
     await requestJson('/api/git/checkout', {
       method: 'POST',
@@ -127,7 +140,7 @@ export async function checkout(repositoryRelativePath: string, target: CheckoutT
         'content-type': 'application/json',
         [MUTATION_REQUEST_HEADER]: MUTATION_REQUEST_HEADER_VALUE,
       },
-      body: JSON.stringify({ repo: repositoryRelativePath, target }),
+      body: JSON.stringify({ repo: repositoryRelativePath, target, requireClean }),
     }),
   )
 }

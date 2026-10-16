@@ -7,7 +7,7 @@ const FULL_HASH = 'abc1234' + '0'.repeat(33)
 describe('parseGitLog', () => {
   test('parses a plain commit line', () => {
     const commits = parseGitLog(
-      logLine('abc1234', FULL_HASH, 'def5678', '', 'Ada Lovelace', '2026-07-18', 'feat: add the widget'),
+      logLine('abc1234', FULL_HASH, 'def5678', '', 'Ada Lovelace', '2026-07-18T23:45:37-07:00', 'feat: add the widget'),
     )
     expect(commits).toEqual([
       {
@@ -16,7 +16,7 @@ describe('parseGitLog', () => {
         parents: ['def5678'],
         refs: [],
         author: 'Ada Lovelace',
-        date: '2026-07-18',
+        date: '2026-07-18T23:45:37-07:00',
         subject: 'feat: add the widget',
       },
     ])

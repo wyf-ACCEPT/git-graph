@@ -526,3 +526,23 @@ describe('CommitDetailPanel ref copy value', () => {
     expect(await copyRefName()).toEqual(['main'])
   })
 })
+
+
+describe('CommitDetailPanel full-file link', () => {
+  test('adds a separate preview link beside diff and copy controls', () => {
+    const { toggled } = renderPanel({ buildFileHref: (path) => `/file?path=${encodeURIComponent(path)}` })
+    const preview = screen.getByRole('link', { name: 'open src/App.tsx full file in a new tab' })
+    expect(preview.getAttribute('href')).toBe('/file?path=src%2FApp.tsx')
+    expect(preview.getAttribute('target')).toBe('_blank')
+    expect(screen.getByRole('link', { name: 'open src/App.tsx diff in a new tab' })).toBeTruthy()
+    expect(toggled).toEqual([])
+    expect(screen.getByRole('img', { name: 'assets/logo.png is binary, no text preview' })).toBeTruthy()
+  })
+  test('an embedding host callback takes precedence over the standalone preview link', () => {
+    const opened: string[] = []
+    renderPanel({ buildFileHref: () => '/file', onOpenFile: (file) => opened.push(file.path) })
+    fireEvent.click(screen.getByRole('button', { name: 'open src/App.tsx' }))
+    expect(opened).toEqual(['src/App.tsx'])
+    expect(screen.queryByRole('link', { name: 'open src/App.tsx full file in a new tab' })).toBeNull()
+  })
+})

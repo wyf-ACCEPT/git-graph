@@ -186,3 +186,14 @@ describe('MultiFileDiffView', () => {
     expect(screen.getByText('This commit changed no files.')).toBeTruthy()
   })
 })
+
+
+describe('MultiFileDiffView full-file link', () => {
+  test('offers a preview link while preserving the file jump link', () => {
+    render(<MultiFileDiffView files={[textFile]} filesTruncated={false}
+      loadFileDiff={() => new Promise(() => {})} emptyMessage="No changes"
+      buildFileHref={(file) => `/file?path=${encodeURIComponent(file.path)}`} />)
+    expect(screen.getByRole('link', { name: 'open src/x.ts full file in a new tab' }).getAttribute('href')).toBe('/file?path=src%2Fx.ts')
+    expect(screen.getAllByRole('link').some((link) => link.getAttribute('href')?.startsWith('#'))).toBe(true)
+  })
+})

@@ -163,6 +163,8 @@ function checkoutFailureStatusAndMessage(
     // Its stderr is the message, verbatim: the user needs git's reason, not ours.
     case 'checkout-refused':
       return { statusCode: 409, message: detail || 'git refused the checkout' }
+    case 'worktree-dirty':
+      return { statusCode: 409, message: 'The working tree has uncommitted changes. Confirm before switching branches.' }
     case 'git-failed':
       return { statusCode: 500, message: `git failed: ${detail || 'unknown error'}` }
   }
@@ -457,10 +459,10 @@ export const gitRoutes = new Elysia()
   .post(
     '/api/git/checkout',
     async ({ body, status }) => {
-      const outcome = await gitService.checkout(body.repo, body.target)
+      const outcome = await gitService.checkout(body.repo, body.target, { requireClean: body.requireClean })
       if (!outcome.ok) {
         const { statusCode, message } = checkoutFailureStatusAndMessage(outcome.reason, body.repo, outcome.detail)
-        return status(statusCode, { error: message })
+        return status(statusCode, { error: message, code: outcome.reason })
       }
       return outcome.result
     },

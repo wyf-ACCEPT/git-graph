@@ -5,6 +5,7 @@ import { fetchCommitDetail, fetchFileDiff } from './lib/api'
 import { loadHighlighter } from './lib/highlighter'
 import { parseCommitDiffParams } from './lib/diffRoutes'
 import { useTheme } from './lib/theme'
+import { filePreviewHref } from './lib/filePreview'
 import { DiffTabFrame } from './components/DiffTabFrame'
 import { MultiFileDiffView } from './components'
 import { CopyButton } from './components/CopyButton'
@@ -93,6 +94,7 @@ export function CommitDiffPage() {
           files={detail.files}
           filesTruncated={detail.filesTruncated}
           loadFileDiff={loadFileDiff}
+          buildFileHref={(file) => params === null ? null : filePreviewHref({ kind: 'commit', repo: params.repositoryRelativePath, hash: detail?.fullHash || params.commitHash, path: file.path })}
           emptyMessage={
             detail.parents.length > 1
               ? 'This merge brought in no changes of its own.'

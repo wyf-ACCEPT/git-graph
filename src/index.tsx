@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import { App } from './App'
 import { FileDiffPage } from './FileDiffPage'
+import { FilePreviewPage } from './FilePreviewPage'
+import { FILE_PREVIEW_ROUTE } from './lib/filePreview'
 import { CommitDiffPage } from './CommitDiffPage'
 import { ComparePage } from './ComparePage'
 import { WorkingTreePage } from './WorkingTreePage'
@@ -13,6 +15,7 @@ import { COMMIT_DIFF_ROUTE, COMPARE_ROUTE, FILE_DIFF_ROUTE, WORKING_ROUTE } from
 // HTML for every path, so the pathname is all that distinguishes them.
 function routeFor(pathname: string) {
   if (pathname === FILE_DIFF_ROUTE) return <FileDiffPage />
+  if (pathname === FILE_PREVIEW_ROUTE) return <FilePreviewPage />
   if (pathname === COMMIT_DIFF_ROUTE) return <CommitDiffPage />
   if (pathname === COMPARE_ROUTE) return <ComparePage />
   if (pathname === WORKING_ROUTE) return <WorkingTreePage />

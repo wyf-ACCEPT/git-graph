@@ -1,0 +1,37 @@
+.gitignore
+  s_1a7d1624a545dc::t_ed0353cb9d16a6 1-13
+AGENTS.md
+  s_1a7d1624a545dc::t_8cc51104d64ace 3-10
+README.md
+  s_1a7d1624a545dc::t_7f086e35440348 3-8,34-35,41,49,52-63,96-97,99-102,128-133
+SECURITY.md
+  s_1a7d1624a545dc::t_25ce0fb4b8b486 7-11,55-59
+docs/6x16-fork-maintenance.md
+  s_1a7d1624a545dc::t_d1204cd500ad6b 1-62
+flake.nix
+  s_1a7d1624a545dc::t_f39eb38391f7db 135
+gg
+  s_1a7d1624a545dc::t_de1b3261c7f455 1-59
+install.sh
+  s_1a7d1624a545dc::t_60283ee785118e 1-17
+package.json
+  s_1a7d1624a545dc::t_1c04d95d56c9ac 8,11,13
+runtime-package.json
+  s_1a7d1624a545dc::t_dba3b738df0683 1-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "50fa961590ce237f6722c798af4a62977d49a474",
+  "prompts": {},
+  "sessions": {
+    "s_1a7d1624a545dc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12fa8-7d6c-7241-b562-2a7a43014fc7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,51 @@
+AGENTS.md
+  s_1a7d1624a545dc::t_234841a926b6b1 517-519,534
+README.md
+  s_1a7d1624a545dc::t_c1df7b6788df8f 138-143
+docs/6x16-fork-maintenance.md
+  s_1a7d1624a545dc::t_512b45ec650559 16-19
+docs/6x19-remote-branch-checkout.md
+  s_1a7d1624a545dc::t_fe1e7629a17d3d 1-33
+server/routes/git.ts
+  s_1a7d1624a545dc::t_019d6db00d3332 165,486,488
+server/services/git.test.ts
+  s_1a7d1624a545dc::t_2f2da764aa54ab 857-919
+server/services/git.ts
+  s_1a7d1624a545dc::t_720d7a334b2bb5 103,837-863
+shared/checkout.ts
+  s_1a7d1624a545dc::t_b4719dd7e0cc05 20,37-39
+shared/git.schema.ts
+  s_1a7d1624a545dc::t_8a2ce21a0cc960 393-397,410
+shared/gitActions.test.ts
+  s_1a7d1624a545dc::t_3a17733da23fa2 101,110,113-116,177-188
+shared/gitActions.ts
+  s_1a7d1624a545dc::t_fd42bfe0f5ef50 22,73-74,157-158,160-162,220-221,258-261,280-286
+src/App.tsx
+  s_1a7d1624a545dc::t_2d147c3cd278a7 279,364-369,436-437,566-567,621
+src/components/CommitDetailPanel.tsx
+  s_1a7d1624a545dc::t_e4dec64be07ea0 268-269,348-349,535-536
+src/components/CommitGraph.tsx
+  s_1a7d1624a545dc::t_97797871075093 153-154,167-168,331-332
+src/components/GitActionMenu.tsx
+  s_1a7d1624a545dc::t_f9ab6c67e90d31 64
+src/components/RefPill.test.tsx
+  s_1a7d1624a545dc::t_7b0043207d7a3b 86-117
+src/components/RefPill.tsx
+  s_1a7d1624a545dc::t_7cdecd27a7adc7 3,35-36,63,72-73,76,88-89,93,96-97,172-173,194,211-212
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "71a25c5be2a5ffadd5c194eb8351de04ea1f9c36",
+  "prompts": {},
+  "sessions": {
+    "s_1a7d1624a545dc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12fa8-7d6c-7241-b562-2a7a43014fc7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}

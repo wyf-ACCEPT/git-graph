@@ -1,0 +1,51 @@
+AGENTS.md
+  s_1a7d1624a545dc::t_4a3ede85baf2c9 13-15,190-194,479-480
+README.md
+  s_1a7d1624a545dc::t_238e08c5b960fc 128,144-165
+SECURITY.md
+  s_1a7d1624a545dc::t_c2d8450a5f69d2 55-60
+docs/6x16-fork-maintenance.md
+  s_1a7d1624a545dc::t_d471356b981654 11-14
+docs/6x19-auto-pull.md
+  s_1a7d1624a545dc::t_5eee67b65e4910 1-46
+server/index.test.ts
+  s_1a7d1624a545dc::t_2659f9f234a4f5 191-206
+server/index.ts
+  s_1a7d1624a545dc::t_f47f1217a712bc 76
+server/routes/git.ts
+  s_1a7d1624a545dc::t_9ed423bb5b0146 4,167,501-520
+server/services/git.ts
+  s_1a7d1624a545dc::t_0f4a287f0a698d 32,105,131-135,922,966-974,986
+server/services/pull.test.ts
+  s_1a7d1624a545dc::t_d5570b9d71afca 1-161
+server/services/pull.ts
+  s_1a7d1624a545dc::t_404aa29aa5179f 1-130
+shared/pull.ts
+  s_1a7d1624a545dc::t_aa1384072bba1f 1-18
+src/App.tsx
+  s_1a7d1624a545dc::t_d9644ac7ffdc23 29-30,102-107,330,443-444,515-518,577-578,637
+src/components/AutoPullControl.tsx
+  s_1a7d1624a545dc::t_ecead7c8945094 1-28
+src/lib/api.ts
+  s_1a7d1624a545dc::t_a9a1c73e5e93ee 5,33-40
+src/lib/autoPull.test.tsx
+  s_1a7d1624a545dc::t_743901ac3e84c8 1-69
+src/lib/autoPull.ts
+  s_1a7d1624a545dc::t_d33e82e0e1c2ce 1-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1a0725e7018cdd1c97ebd8c5a085d507e66f1146",
+  "prompts": {},
+  "sessions": {
+    "s_1a7d1624a545dc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12fa8-7d6c-7241-b562-2a7a43014fc7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}

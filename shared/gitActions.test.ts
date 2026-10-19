@@ -98,7 +98,7 @@ describe('buildGitMenuSections', () => {
     ])
   })
 
-  test('a remote-only ref offers checkout and compare, both disabled with the reason', () => {
+  test('a remote-only origin ref offers tracking checkout when the local listing is known', () => {
     const target = commit({ refs: ['origin/published'] })
     const refGroups = groupRefDecorations(target.refs, ['origin'])
     const [remoteSection] = buildGitMenuSections({
@@ -107,12 +107,13 @@ describe('buildGitMenuSections', () => {
       focusedGroup: refGroups[0]!,
       head: onMain,
       defaultBranch: 'main',
+      localBranchNames: ['main'],
     })
     expect(remoteSection!.heading).toBe('remote branch origin/published')
-    expect(remoteSection!.entries.map((entry) => entry.action)).toEqual(['checkout-branch', 'compare-branch'])
-    for (const entry of remoteSection!.entries) {
-      expect(entry.unavailableReason).toContain('origin/published has no local branch')
-    }
+    expect(remoteSection!.entries.map((entry) => entry.action)).toEqual(['checkout-remote-branch', 'compare-branch'])
+    expect(remoteSection!.entries[0]!.unavailableReason).toBeNull()
+    expect(remoteSection!.entries[1]!.unavailableReason).toContain('origin/published has no local branch')
+    expect(checkoutTargetForEntry(remoteSection!.entries[0]!, target)).toEqual({ kind: 'remote-branch', remote: 'origin', name: 'published' })
   })
 
   test('with HEAD already detached here, the detaching checkouts say so instead of vanishing', () => {
@@ -171,6 +172,18 @@ describe('buildGitMenuSections', () => {
     const mutating = sections.flatMap((section) => section.entries.filter((entry) => entry.mutates))
     expect(mutating.map((entry) => entry.action)).toEqual(['checkout-commit', 'checkout-branch', 'checkout-tag'])
   })
+})
+
+test('tracking checkout confirmation names the local branch, origin ref, and tracking relationship', () => {
+  const description = describeCheckout({ kind: 'remote-branch', remote: 'origin', name: 'release/topic' }, {
+    repositoryName: 'example', hasUncommittedChanges: true,
+  })
+  expect(description.title).toBe('Create and check out branch release/topic?')
+  expect(description.summary).toContain('origin/release/topic')
+  expect(description.summary).toContain('track')
+  expect(description.confirmLabel).toBe('Create and check out')
+  expect(description.warnings.join(' ')).toContain('uncommitted changes')
+  expect(description.warnings.join(' ')).not.toContain('detaches HEAD')
 })
 
 describe('checkoutTargetForEntry', () => {

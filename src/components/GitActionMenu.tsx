@@ -61,6 +61,7 @@ const ACTION_ICONS: Record<GitActionId, ReactNode> = {
   'copy-short-hash': <IconCopy size={ICON_SIZE} aria-hidden />,
   'open-commit': <IconExternalLink size={ICON_SIZE} aria-hidden />,
   'checkout-branch': <IconGitBranch size={ICON_SIZE} aria-hidden />,
+  'checkout-remote-branch': <IconGitBranch size={ICON_SIZE} aria-hidden />,
   'compare-branch': <IconGitCompare size={ICON_SIZE} aria-hidden />,
   'checkout-tag': <IconTag size={ICON_SIZE} aria-hidden />,
 }

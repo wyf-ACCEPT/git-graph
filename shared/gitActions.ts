@@ -19,6 +19,7 @@ export type GitActionId =
   | 'copy-short-hash'
   | 'open-commit'
   | 'checkout-branch'
+  | 'checkout-remote-branch'
   | 'compare-branch'
   | 'checkout-tag'
 
@@ -69,6 +70,8 @@ export type GitMenuSection = {
 }
 
 export type GitMenuInput = {
+  /** Full local listing, including branches outside the loaded commit window. */
+  localBranchNames?: readonly string[]
   commit: GitCommit
   /** The commit's refs, grouped — `groupRefDecorations(commit.refs, remotes)`. */
   refGroups: readonly RefGroup[]
@@ -151,10 +154,12 @@ function refSection(group: RefGroup, input: GitMenuInput): GitMenuSection | null
         heading: `remote branch ${qualifiedName}`,
         entries: [
           {
-            action: 'checkout-branch',
-            label: 'Checkout branch',
+            action: 'checkout-remote-branch',
+            label: 'Create and check out local branch',
             subject: group.name,
-            unavailableReason: `${qualifiedName} has no local branch — checking out a remote branch is not supported yet`,
+            unavailableReason: canCreateOriginBranch(group, input.localBranchNames)
+              ? null
+              : 'Requires an origin branch with no same-named local branch; origin/HEAD is not a branch to create.',
             mutates: true,
           },
           {
@@ -212,6 +217,8 @@ export function buildGitMenuSections(input: GitMenuInput): GitMenuSection[] {
 /** The checkout request a mutating menu entry stands for, or null for the others. */
 export function checkoutTargetForEntry(entry: GitMenuEntry, commit: GitCommit): CheckoutTarget | null {
   switch (entry.action) {
+    case 'checkout-remote-branch':
+      return { kind: 'remote-branch', remote: 'origin', name: entry.subject }
     case 'checkout-branch':
       return { kind: 'branch', name: entry.subject }
     case 'checkout-tag':
@@ -248,7 +255,10 @@ export function describeCheckout(
   const warnings: string[] = []
   let title: string
   let summary: string
-  if (target.kind === 'branch') {
+  if (target.kind === 'remote-branch') {
+    title = `Create and check out branch ${target.name}?`
+    summary = `Create the local branch ${target.name} from origin/${target.name} in ${repositoryName}, switch to it, and track origin/${target.name}.`
+  } else if (target.kind === 'branch') {
     title = `Check out branch ${target.name}?`
     summary = `Runs git switch ${target.name} in ${repositoryName}: HEAD moves to the branch ${target.name} and the working tree is updated to its tip.`
   } else {
@@ -267,5 +277,11 @@ export function describeCheckout(
         'checkout if any of them would be overwritten.',
     )
   }
-  return { title, summary, warnings, confirmLabel: target.kind === 'branch' ? 'Check out branch' : 'Check out and detach' }
+  return { title, summary, warnings, confirmLabel: target.kind === 'remote-branch' ? 'Create and check out' : target.kind === 'branch' ? 'Check out branch' : 'Check out and detach' }
+}
+
+/** A remote-only decoration is not proof that the local branch is absent elsewhere. */
+export function canCreateOriginBranch(group: RefGroup, localBranchNames?: readonly string[]): boolean {
+  return localBranchNames !== undefined && group.kind === 'remote' && group.remotes.includes('origin') &&
+    group.name !== 'HEAD' && !localBranchNames.includes(group.name)
 }

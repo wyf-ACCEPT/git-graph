@@ -514,8 +514,9 @@ Currently 342 tests across 27 files.
   `describeCheckout`'s statement, runs git on confirm, and keeps git's stderr in
   the dialog on failure; success shows git's one-line report in a status strip
   and refetches. A detaching checkout (tag or commit) always carries the
-  detached-HEAD warning. Remote-only refs offer checkout disabled-with-reason
-  (tracking-branch creation is not in this slice).
+  detached-HEAD warning. Origin-only branches offer confirmed creation of a
+  missing same-named local tracking branch; origin/HEAD, unknown local listings,
+  existing local names, and other remotes remain unavailable for creation.
 - ADR-0016: no third-party runtime assets — everything is bundled.
 - ADR-0022: Tabler vectors, never emoji.
 - ADR-0018 / ADR-0037: dynamic port allocation runs in front of the strict bind
@@ -530,7 +531,7 @@ Currently 342 tests across 27 files.
 - Theme: light/dark/system toggle in every shell's header (default `system`),
   persisted (ADR-0029) and applied via `[data-theme]`; a pre-paint shim in
   `index.html` avoids a flash.
-- Branch double-click shortcut (local customization, 2026-10-16): a non-current local branch label can switch directly only after a fresh server-side clean-worktree check. Dirty index/worktree/untracked files open the existing confirmation dialog. Context-menu checkouts still confirm; tags and remote-only refs have no double-click shortcut. A failed direct checkout stays visible in the status strip.
+- Branch double-click shortcut: a non-current local branch label can switch directly only after a fresh server-side clean-worktree check. Dirty index/worktree/untracked files open the existing confirmation dialog. An origin-only branch with no same-named local branch always opens confirmation to create, switch, and track it; the full local branch listing determines availability, and the server revalidates membership. Tags, origin/HEAD, and other remotes have no creation shortcut. A failed direct checkout stays visible in the status strip. See `docs/6x19-remote-branch-checkout.md`.
 - Commit detail (ADR-0031): opens inline beneath the selected row by default,
   with a persisted panel-header toggle back to the docked right sidebar.
 - Commit detail order: metadata (commit · author · dates · parents · refs), then

@@ -276,6 +276,7 @@ export function App() {
   )
 
   const defaultBranch = branchList?.defaultBranch ?? null
+  const localBranchNames = branchList?.branches.map((branch) => branch.name)
   const buildCompareHref = useCallback(
     (branchName: string) => {
       // Nothing to compare a branch against without a repository, and comparing
@@ -360,6 +361,12 @@ export function App() {
     void runCheckout({ kind: 'branch', name: branchName }, true)
   }
 
+  function checkoutRemoteBranch(branchName: string) {
+    if (pendingCheckout !== null || checkoutInFlight.current || localBranchNames?.includes(branchName)) return
+    setContextMenu(null)
+    requestCheckout({ kind: 'remote-branch', remote: 'origin', name: branchName })
+  }
+
   const loadedHashes = useMemo(() => new Set(commits.map((commit) => commit.hash)), [commits])
   const isCommitLoaded = useCallback((commitHash: string) => loadedHashes.has(commitHash), [loadedHashes])
 
@@ -426,6 +433,8 @@ export function App() {
         buildCommitDiffHref={buildCommitDiffHref}
         buildCompareHref={buildCompareHref}
         onCheckoutBranch={isCheckingOut ? undefined : checkoutBranch}
+        onCheckoutRemoteBranch={isCheckingOut ? undefined : checkoutRemoteBranch}
+        localBranchNames={localBranchNames}
         fileDiff={fileDiff}
         isLoadingFileDiff={isLoadingFileDiff}
         fileDiffError={fileDiffError}
@@ -554,6 +563,8 @@ export function App() {
               selectedDetail={detailLayout === 'inline' ? detailPanel : null}
               onContextMenu={setContextMenu}
               onCheckoutBranch={isCheckingOut ? undefined : checkoutBranch}
+              onCheckoutRemoteBranch={isCheckingOut ? undefined : checkoutRemoteBranch}
+              localBranchNames={localBranchNames}
             />
           )}
           </div>
@@ -607,6 +618,7 @@ export function App() {
             focusedGroup: contextMenu.focusedGroup,
             head: headState,
             defaultBranch,
+            localBranchNames,
           }}
           anchor={contextMenu.anchor}
           onClose={closeContextMenu}

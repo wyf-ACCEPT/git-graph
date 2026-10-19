@@ -100,6 +100,7 @@ export type CheckoutFailureReason =
   | 'unknown-commit'
   | 'invalid-hash'
   | 'checkout-refused'
+  | 'branch-exists'
   | 'worktree-dirty'
   | 'git-failed'
 
@@ -833,6 +834,33 @@ export function createGitService({ repositories: repositorySet }: { repositories
     target: CheckoutTarget,
   ): Promise<{ ok: true; checkout: ResolvedCheckout } | { ok: false; reason: CheckoutFailureReason; detail?: string }> {
     switch (target.kind) {
+      case 'remote-branch': {
+        // Resolve only origin's real tracking refs. Never accept a caller-supplied
+        // start point, a symbolic origin/HEAD alias, or an existing local branch.
+        const data = await readBranchData(repositoryPath)
+        if (!data.ok) return { ok: false, reason: 'git-failed', detail: data.detail }
+        if (data.branchNames.includes(target.name)) {
+          return { ok: false, reason: 'branch-exists', detail: `Local branch ${target.name} already exists. Refresh the graph and switch to that branch instead.` }
+        }
+        const validName = await runGit(repositoryPath, ['check-ref-format', '--branch', target.name])
+        if (validName.exitCode !== 0 || target.name === 'HEAD') {
+          return { ok: false, reason: 'unknown-ref', detail: 'Not a valid local branch name.' }
+        }
+        const remoteNames = await readRemoteNames(repositoryPath)
+        if (!remoteNames.includes('origin')) return { ok: false, reason: 'unknown-ref', detail: 'No origin tracking branches are available.' }
+        const refs = await runGit(repositoryPath, ['for-each-ref', `--format=%(refname)${FIELD_SEPARATOR}%(symref)`, 'refs/remotes/origin'])
+        if (refs.exitCode !== 0) return { ok: false, reason: 'git-failed', detail: refs.stderr.trim() }
+        const wantedRef = `refs/remotes/origin/${target.name}`
+        if (remoteNames.some((name) => name !== 'origin' && wantedRef.startsWith(`refs/remotes/${name}/`))) {
+          return { ok: false, reason: 'unknown-ref', detail: 'This tracking ref belongs to a different remote.' }
+        }
+        const matched = refs.stdout.split('\n').find((line) => {
+          const [name, symbolicTarget] = line.split(FIELD_SEPARATOR)
+          return name === wantedRef && symbolicTarget === ''
+        })
+        if (matched === undefined) return { ok: false, reason: 'unknown-ref', detail: `No such origin branch: ${target.name}` }
+        return { ok: true, checkout: { kind: 'tracking-branch', name: target.name, startPoint: wantedRef } }
+      }
       case 'branch': {
         const data = await readBranchData(repositoryPath)
         if (!data.ok) return { ok: false, reason: 'git-failed', detail: data.detail }

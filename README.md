@@ -135,6 +135,12 @@ overwrite uncommitted changes is refused, and git's message is shown to you
 verbatim. After a checkout the graph, the working-tree row, and any open
 `/working` tab refresh.
 
+Double-click an `origin` branch that has no same-named local branch to confirm
+creating and checking out a local tracking branch. The context menu offers the
+same action for keyboard users. `origin/HEAD` is excluded. Confirmation uses the
+current local remote-tracking ref without fetching, refuses an existing local
+branch, and retains Git's protection against overwriting uncommitted work.
+
 ## Security model — loopback by default
 
 git-graph is an **unauthenticated** API: anything that can reach the port can

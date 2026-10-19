@@ -1,5 +1,6 @@
 import { Fragment, type MouseEvent, type ReactNode } from 'react'
 import { refGroupLabel, refGroupTitle, type RefGroup } from '../../shared/refGroup'
+import { canCreateOriginBranch } from '../../shared/gitActions'
 
 // Git ref decorations render on two surfaces — graph rows and the commit
 // detail panel — so they are shared units here (ADR-0026/ADR-0027) rather than
@@ -31,6 +32,8 @@ export type RefPillProps = {
   children?: ReactNode
   /** Pointer shortcut; keyboard users retain the row/context-menu checkout action. */
   onCheckoutBranch?: (branchName: string) => void
+  onCheckoutRemoteBranch?: (branchName: string) => void
+  localBranchNames?: readonly string[]
   /**
    * Opens the host's context menu for this ref. When set, a right-click on the
    * pill opens it instead of the browser's menu, and does not bubble on to the
@@ -57,7 +60,7 @@ export type RefPillProps = {
  * agreement with anything — it is simply that remote's branch, so it keeps the
  * qualified name git printed (`origin/feature`) and gains no segments.
  */
-export function RefPill({ group, children, onContextMenu, onCheckoutBranch }: RefPillProps) {
+export function RefPill({ group, children, onContextMenu, onCheckoutBranch, onCheckoutRemoteBranch, localBranchNames }: RefPillProps) {
   const { text, markerRemotes } = refGroupLabel(group)
   // A checked-out branch reads as HEAD, the way it did before its remotes were
   // folded in — the marker is additive, it never replaces the kind.
@@ -66,8 +69,11 @@ export function RefPill({ group, children, onContextMenu, onCheckoutBranch }: Re
   // at all and names itself `HEAD` in the pill already.
   const isCheckedOut = group.kind === 'branch' && group.isHead
   const canCheckout = group.kind === 'branch' && !group.isHead && onCheckoutBranch !== undefined
+  const canCreate = onCheckoutRemoteBranch !== undefined && canCreateOriginBranch(group, localBranchNames)
+  const canDoubleClick = canCheckout || canCreate
   const isSegmented = markerRemotes.length > 0
   const className = ['ref-pill', `ref-${kindClass}`]
+  if (canDoubleClick) className.push('cursor-pointer')
   if (isSegmented) className.push('ref-segmented')
   if (isCheckedOut) className.push('ref-checked-out')
 
@@ -79,15 +85,16 @@ export function RefPill({ group, children, onContextMenu, onCheckoutBranch }: Re
   return (
     <span
       className={className.join(' ')}
-      title={refGroupTitle(group) + (canCheckout ? '\nDouble-click to switch branch; uncommitted changes require confirmation.' : '')}
-      onClick={canCheckout ? (event) => {
+      title={refGroupTitle(group) + (canCreate ? '\nDouble-click to create and check out a local branch tracking origin/' + group.name + '.' : canCheckout ? '\nDouble-click to switch branch; uncommitted changes require confirmation.' : '')}
+      onClick={canDoubleClick ? (event) => {
         // Keep the label stationary between clicks; expanding the row can move it.
         event.stopPropagation()
       } : undefined}
-      onDoubleClick={canCheckout ? (event) => {
+      onDoubleClick={canDoubleClick ? (event) => {
         event.preventDefault()
         event.stopPropagation()
-        onCheckoutBranch!(group.name)
+        if (canCreate) onCheckoutRemoteBranch!(group.name)
+        else onCheckoutBranch!(group.name)
       } : undefined}
       onContextMenu={
         onContextMenu &&
@@ -162,6 +169,8 @@ export type CommitRefRowProps = {
   /** Opens the host's context menu for one of the pills; see {@link RefPillProps.onContextMenu}. */
   onRefContextMenu?: (group: RefGroup, event: MouseEvent<HTMLElement>) => void
   onCheckoutBranch?: (branchName: string) => void
+  onCheckoutRemoteBranch?: (branchName: string) => void
+  localBranchNames?: readonly string[]
 }
 
 /**
@@ -182,7 +191,7 @@ export type CommitRefRowProps = {
  * nightshift-ui's panel — and a host aligning its own non-commit row beside the
  * graph gets the same cluster instead of a hand-rolled dot that drifts from it.
  */
-export function CommitRefRow({ groups, laneColor, onRefContextMenu, onCheckoutBranch }: CommitRefRowProps) {
+export function CommitRefRow({ groups, laneColor, onRefContextMenu, onCheckoutBranch, onCheckoutRemoteBranch, localBranchNames }: CommitRefRowProps) {
   if (groups.length === 0) return null
   const checkedOutBranch =
     groups.find((group) => group.kind === 'branch' && group.isHead)?.name ?? null
@@ -199,6 +208,8 @@ export function CommitRefRow({ groups, laneColor, onRefContextMenu, onCheckoutBr
           key={`${group.kind}:${group.name}`}
           group={group}
           onCheckoutBranch={onCheckoutBranch}
+          onCheckoutRemoteBranch={onCheckoutRemoteBranch}
+          localBranchNames={localBranchNames}
           onContextMenu={onRefContextMenu && ((event) => onRefContextMenu(group, event))}
         />
       ))}

@@ -13,6 +13,10 @@ updates are optional.
 - Double-clicking a non-current local branch switches directly after a fresh
   server-side check. Staged, unstaged, and untracked changes require confirmation.
   Git's normal conflict protection remains; there is no forced switch or stash.
+- An origin-only branch with no same-named local branch opens a creation
+  confirmation on double-click, also available through the context menu.
+  Confirmation creates, switches to, and tracks the origin branch. Symbolic
+  origin/HEAD is excluded; the server rechecks local names and remote refs.
 - Only HEAD is a hollow node, radius 6; all other commits, including merges, are
   filled nodes. Selection uses the row background. Detached HEAD is supported.
 - Changed-file rows offer a separate complete read-only preview beside diff and

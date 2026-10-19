@@ -265,6 +265,8 @@ export type CommitDetailPanelProps = {
    */
   buildCompareHref: (branchName: string) => string | null
   onCheckoutBranch?: (branchName: string) => void
+  onCheckoutRemoteBranch?: (branchName: string) => void
+  localBranchNames?: readonly string[]
   /** The diff for {@link expandedFilePath}; the host owns the fetching. */
   fileDiff: FileDiffPayload | null
   isLoadingFileDiff: boolean
@@ -343,6 +345,8 @@ export function CommitDetailPanel({
   buildCommitDiffHref,
   buildCompareHref,
   onCheckoutBranch,
+  onCheckoutRemoteBranch,
+  localBranchNames,
   fileDiff,
   isLoadingFileDiff,
   fileDiffError,
@@ -528,7 +532,8 @@ export function CommitDetailPanel({
                           key={`${refGroup.kind}:${refGroup.name}`}
                           className="inline-flex items-center gap-0.5"
                         >
-                          <RefPill group={refGroup} onCheckoutBranch={onCheckoutBranch} />
+                          <RefPill group={refGroup} onCheckoutBranch={onCheckoutBranch}
+                            onCheckoutRemoteBranch={onCheckoutRemoteBranch} localBranchNames={localBranchNames} />
                           {/* Copy a ref that resolves: `main` for a branch (with
                               or without remotes), `origin/feature` for one that
                               exists only on remotes. Not the pill's label — that

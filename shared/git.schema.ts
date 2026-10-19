@@ -391,6 +391,11 @@ export const CheckoutTargetSchema = z
       name: z.string().min(1).describe('Local branch to switch to — validated by membership against `refs/heads`.'),
     }),
     z.object({
+      kind: z.literal('remote-branch'),
+      remote: z.literal('origin'),
+      name: z.string().min(1).describe('Create this missing local branch from its non-symbolic origin tracking ref.'),
+    }),
+    z.object({
       kind: z.literal('tag'),
       name: z.string().min(1).describe('Tag to detach HEAD at — validated by membership against `refs/tags`.'),
     }),
@@ -402,7 +407,7 @@ export const CheckoutTargetSchema = z
         .describe('Commit to detach HEAD at — must resolve to a commit reachable from a ref or HEAD.'),
     }),
   ])
-  .describe('What to check out: a local branch (HEAD follows it), or a tag or commit (HEAD detaches there).')
+  .describe('Switch to a local branch, create a missing local branch tracking origin, or detach HEAD at a tag or commit.')
 export type CheckoutTarget = z.infer<typeof CheckoutTargetSchema>
 
 export const CheckoutRequestSchema = z.object({

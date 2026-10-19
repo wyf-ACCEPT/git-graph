@@ -17,6 +17,7 @@ const CHECKOUT_CONFIG_ARGUMENTS = ['-c', 'advice.detachedHead=false'] as const
 
 /** What the service has already resolved and validated a checkout target into. */
 export type ResolvedCheckout =
+  | { kind: 'tracking-branch'; name: string; startPoint: string }
   /** A local branch name, exactly as `for-each-ref refs/heads` listed it. */
   | { kind: 'branch'; name: string }
   /**
@@ -33,6 +34,9 @@ export type ResolvedCheckout =
  * refname or a full hash, so it has exactly one reading.
  */
 export function checkoutArguments(checkout: ResolvedCheckout): string[] {
+  if (checkout.kind === 'tracking-branch') {
+    return [...CHECKOUT_CONFIG_ARGUMENTS, 'switch', '--no-guess', '--create', checkout.name, '--track', '--', checkout.startPoint]
+  }
   if (checkout.kind === 'branch') {
     return [...CHECKOUT_CONFIG_ARGUMENTS, 'switch', '--no-guess', '--', checkout.name]
   }

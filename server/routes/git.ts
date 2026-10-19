@@ -162,6 +162,7 @@ function checkoutFailureStatusAndMessage(
     // git said no — most often uncommitted changes the switch would overwrite.
     // Its stderr is the message, verbatim: the user needs git's reason, not ours.
     case 'checkout-refused':
+    case 'branch-exists':
       return { statusCode: 409, message: detail || 'git refused the checkout' }
     case 'worktree-dirty':
       return { statusCode: 409, message: 'The working tree has uncommitted changes. Confirm before switching branches.' }
@@ -482,9 +483,9 @@ export const gitRoutes = new Elysia()
       },
       detail: {
         tags: ['git'],
-        summary: 'Check out a branch, tag, or commit',
+        summary: 'Check out a branch, create an origin tracking branch, or detach at a tag or commit',
         description:
-          'Changes the repository on disk: `git switch` to a local branch, or `git switch --detach` at a tag ' +
+          'Changes the repository on disk: `git switch` to a local branch, create a missing same-named local branch tracking origin, or `git switch --detach` at a tag ' +
           'or commit (which leaves HEAD on no branch). Every target is validated by membership — a branch ' +
           'against `refs/heads`, a tag against `refs/tags`, a commit against the history reachable from the ' +
           "repository's refs — and an unknown one is rejected with 404 before git runs. git's own safety " +

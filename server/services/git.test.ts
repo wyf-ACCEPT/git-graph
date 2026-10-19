@@ -854,6 +854,69 @@ describe('checkout', () => {
     expect(fixture.currentBranch()).toBe('feature')
   })
 
+  test('creates a same-named local branch from origin and configures upstream', async () => {
+    const fixture = createCheckoutFixture()
+    // A tag with the same bare name must not win over the full remote ref.
+    runGit(fixture.repositoryPath, 'tag', 'published', 'main')
+    const outcome = await service().checkout(fixture.repositoryName, { kind: 'remote-branch', remote: 'origin', name: 'published' })
+    expect(outcome.ok).toBe(true)
+    expect(fixture.currentBranch()).toBe('published')
+    expect(fixture.headHash()).toBe(fixture.fullHashOf('refs/remotes/origin/published'))
+    expect(gitOutput(fixture.repositoryPath, 'rev-parse', '--symbolic-full-name', '@{upstream}')).toBe('refs/remotes/origin/published')
+  })
+
+  test('creates slash-named branches and preserves non-conflicting untracked work', async () => {
+    const fixture = createCheckoutFixture()
+    runGit(fixture.repositoryPath, 'update-ref', 'refs/remotes/origin/release/topic', 'feature')
+    writeFileSync(join(fixture.repositoryPath, 'keep.txt'), 'keep my work\n')
+    const outcome = await service().checkout(fixture.repositoryName, { kind: 'remote-branch', remote: 'origin', name: 'release/topic' })
+    expect(outcome.ok).toBe(true)
+    expect(fixture.currentBranch()).toBe('release/topic')
+    expect(gitOutput(fixture.repositoryPath, 'status', '--porcelain')).toContain('keep.txt')
+    expect(gitOutput(fixture.repositoryPath, 'config', 'branch.release/topic.merge')).toBe('refs/heads/release/topic')
+  })
+
+  test('a conflicting dirty worktree refuses the switch without creating a branch', async () => {
+    const fixture = createCheckoutFixture()
+    const before = fixture.headHash()
+    writeFileSync(join(fixture.repositoryPath, 'tracked.txt'), 'keep this edit\n')
+    const outcome = await service().checkout(fixture.repositoryName, { kind: 'remote-branch', remote: 'origin', name: 'published' })
+    expect(outcome).toMatchObject({ ok: false, reason: 'checkout-refused' })
+    expect(fixture.headHash()).toBe(before)
+    expect(fixture.currentBranch()).toBe('main')
+    expect(gitOutput(fixture.repositoryPath, 'for-each-ref', '--format=%(refname)', 'refs/heads/published')).toBe('')
+    expect(await Bun.file(join(fixture.repositoryPath, 'tracked.txt')).text()).toBe('keep this edit\n')
+  })
+
+  test('refuses a local branch that appeared after confirmation was opened', async () => {
+    const fixture = createCheckoutFixture()
+    runGit(fixture.repositoryPath, 'branch', 'published', 'main')
+    const before = fixture.fullHashOf('published')
+    const outcome = await service().checkout(fixture.repositoryName, { kind: 'remote-branch', remote: 'origin', name: 'published' })
+    expect(outcome).toMatchObject({ ok: false, reason: 'branch-exists' })
+    expect(fixture.fullHashOf('published')).toBe(before)
+    expect(fixture.currentBranch()).toBe('main')
+  })
+
+  for (const name of ['missing', 'HEAD', 'alias', '--detach', '../published']) {
+    test(`refuses unknown, symbolic, or unsafe origin target ${name}`, async () => {
+      const fixture = createCheckoutFixture()
+      runGit(fixture.repositoryPath, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/published')
+      runGit(fixture.repositoryPath, 'symbolic-ref', 'refs/remotes/origin/alias', 'refs/remotes/origin/published')
+      const outcome = await service().checkout(fixture.repositoryName, { kind: 'remote-branch', remote: 'origin', name })
+      expect(outcome).toMatchObject({ ok: false, reason: 'unknown-ref' })
+      expect(fixture.currentBranch()).toBe('main')
+    })
+  }
+
+  test('refuses an origin tracking ref that disappeared', async () => {
+    const fixture = createCheckoutFixture()
+    runGit(fixture.repositoryPath, 'update-ref', '-d', 'refs/remotes/origin/published')
+    const outcome = await service().checkout(fixture.repositoryName, { kind: 'remote-branch', remote: 'origin', name: 'published' })
+    expect(outcome).toMatchObject({ ok: false, reason: 'unknown-ref' })
+    expect(fixture.currentBranch()).toBe('main')
+  })
+
   for (const dirty of ['unstaged', 'staged', 'untracked'] as const) {
     test(`clean-only checkout refuses fresh ${dirty} changes before moving HEAD`, async () => {
       const fixture = createCheckoutFixture()

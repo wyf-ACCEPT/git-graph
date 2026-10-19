@@ -83,6 +83,38 @@ describe('CommitRefRow', () => {
 
 
 describe('branch double-click shortcut', () => {
+  test('origin-only branches request confirmation through the remote handler without expanding the row', () => {
+    const requested: string[] = []
+    let rowClicks = 0
+    const { container } = render(<div onClick={() => rowClicks++}><CommitRefRow
+      groups={groupRefDecorations(['origin/published'], ['origin'])}
+      laneColor="var(--lane-0)" localBranchNames={['main']}
+      onCheckoutRemoteBranch={(name) => requested.push(name)}
+    /></div>)
+    const pill = pillsOf(container)[0]!
+    fireEvent.click(pill)
+    expect(requested).toEqual([])
+    expect(rowClicks).toBe(0)
+    fireEvent.doubleClick(pill)
+    expect(requested).toEqual(['published'])
+    expect(pill.getAttribute('title')).toContain('create and check out')
+  })
+
+  test('existing local names, origin/HEAD, other remotes, and unknown local listings never offer creation', () => {
+    const requested: string[] = []
+    const { container } = render(<CommitRefRow
+      groups={groupRefDecorations(['origin/published', 'origin/HEAD', 'upstream/topic'], ['origin', 'upstream'])}
+      laneColor="var(--lane-0)" localBranchNames={['published']}
+      onCheckoutRemoteBranch={(name) => requested.push(name)}
+    />)
+    for (const pill of pillsOf(container)) fireEvent.doubleClick(pill)
+    expect(requested).toEqual([])
+    cleanup()
+    const unknown = render(<CommitRefRow groups={groupRefDecorations(['origin/topic'], ['origin'])}
+      laneColor="var(--lane-0)" onCheckoutRemoteBranch={(name) => requested.push(name)} />)
+    fireEvent.doubleClick(pillsOf(unknown.container)[0]!)
+    expect(requested).toEqual([])
+  })
   test('only non-current local branches request checkout', () => {
     const requested: string[] = []
     const { container } = render(<CommitRefRow

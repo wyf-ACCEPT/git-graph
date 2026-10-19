@@ -150,6 +150,8 @@ export type CommitGraphProps = {
   onContextMenu?: (request: CommitContextMenuRequest) => void
   /** Double-click a non-current local branch; the host checks cleanliness before switching. */
   onCheckoutBranch?: (branchName: string) => void
+  onCheckoutRemoteBranch?: (branchName: string) => void
+  localBranchNames?: readonly string[]
 }
 
 export function CommitGraph({
@@ -162,6 +164,8 @@ export function CommitGraph({
   selectedDetail = null,
   onContextMenu,
   onCheckoutBranch,
+  onCheckoutRemoteBranch,
+  localBranchNames,
 }: CommitGraphProps) {
   const layout = useMemo(() => computeGraphLayout(commits), [commits])
   const headHash = useMemo(() => findHeadState(commits, remotes).hash, [commits, remotes])
@@ -324,6 +328,8 @@ export function CommitGraph({
               <CommitRefRow
                 groups={refGroups}
                 onCheckoutBranch={onCheckoutBranch}
+                onCheckoutRemoteBranch={onCheckoutRemoteBranch}
+                localBranchNames={localBranchNames}
                 laneColor={laneColor(layout.placements[row]!.lane)}
                 onRefContextMenu={
                   onContextMenu &&

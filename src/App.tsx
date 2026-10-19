@@ -26,6 +26,8 @@ import { loadHighlighter } from './lib/highlighter'
 import { useTheme } from './lib/theme'
 import { filePreviewHref } from './lib/filePreview'
 import { useDetailLayout } from './lib/detailLayout'
+import { useAutoPull } from './lib/autoPull'
+import { AutoPullControl } from './components/AutoPullControl'
 import { announceRepositoryChange, useRepositoryChanges } from './lib/repositoryChanges'
 import {
   CommitGraph,
@@ -97,6 +99,12 @@ export function App() {
   const checkoutInFlight = useRef(false)
   const currentRepository = useRef(selectedRepository)
   currentRepository.current = selectedRepository
+  const autoPull = useAutoPull({
+    repository: selectedRepository,
+    repositoryKey: selectedRepository === null ? null : JSON.stringify([repositoryList?.rootPath, selectedRepository]),
+    paused: isCheckingOut || pendingCheckout !== null || contextMenu !== null,
+    onRefresh: useCallback(() => setRepositoryVersion((version) => version + 1), []),
+  })
 
   // Loading a syntax grammar the first time a diff is expanded costs about half
   // a second; warming the highlighter here spends it while nobody is waiting.
@@ -319,7 +327,7 @@ export function App() {
 
   async function runCheckout(target: CheckoutTarget, requireClean = false) {
     const repository = selectedRepository
-    if (repository === null || checkoutInFlight.current) return
+    if (repository === null || checkoutInFlight.current || autoPull.isRunning) return
     checkoutInFlight.current = true
     setIsCheckingOut(true)
     setCheckoutError(null)
@@ -432,8 +440,8 @@ export function App() {
         })}
         buildCommitDiffHref={buildCommitDiffHref}
         buildCompareHref={buildCompareHref}
-        onCheckoutBranch={isCheckingOut ? undefined : checkoutBranch}
-        onCheckoutRemoteBranch={isCheckingOut ? undefined : checkoutRemoteBranch}
+        onCheckoutBranch={isCheckingOut || autoPull.isRunning ? undefined : checkoutBranch}
+        onCheckoutRemoteBranch={isCheckingOut || autoPull.isRunning ? undefined : checkoutRemoteBranch}
         localBranchNames={localBranchNames}
         fileDiff={fileDiff}
         isLoadingFileDiff={isLoadingFileDiff}
@@ -504,6 +512,10 @@ export function App() {
             </div>
 
             <span className="text-faint tabular-nums">{readout}</span>
+            <AutoPullControl enabled={autoPull.enabled} running={autoPull.isRunning}
+              paused={isCheckingOut || pendingCheckout !== null || contextMenu !== null}
+              available={selectedRepository !== null} result={autoPull.result}
+              onToggle={autoPull.setEnabled} onPull={() => { void autoPull.pullNow() }} />
 
             <DetailLayoutToggle detailLayout={detailLayout} onSelectDetailLayout={setDetailLayout} />
             <ThemeToggle themeMode={themeMode} onSelectThemeMode={setThemeMode} />
@@ -562,8 +574,8 @@ export function App() {
               // panel docks to the right instead.
               selectedDetail={detailLayout === 'inline' ? detailPanel : null}
               onContextMenu={setContextMenu}
-              onCheckoutBranch={isCheckingOut ? undefined : checkoutBranch}
-              onCheckoutRemoteBranch={isCheckingOut ? undefined : checkoutRemoteBranch}
+              onCheckoutBranch={isCheckingOut || autoPull.isRunning ? undefined : checkoutBranch}
+              onCheckoutRemoteBranch={isCheckingOut || autoPull.isRunning ? undefined : checkoutRemoteBranch}
               localBranchNames={localBranchNames}
             />
           )}
@@ -622,7 +634,7 @@ export function App() {
           }}
           anchor={contextMenu.anchor}
           onClose={closeContextMenu}
-          onCheckout={requestCheckout}
+          onCheckout={isCheckingOut || autoPull.isRunning ? undefined : requestCheckout}
           buildCommitHref={buildMenuCommitHref}
           buildCompareHref={buildCompareHref}
           onNotice={setNotice}

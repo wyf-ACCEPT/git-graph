@@ -1,0 +1,18 @@
+import { z } from 'zod/v4'
+
+export const AUTO_PULL_INTERVAL_MS = 5 * 60 * 1000
+
+export const PullRequestSchema = z.object({
+  repo: z.string().default(''),
+  manual: z.boolean().default(false).describe('Explicit Pull now bypasses the automatic interval deduplication.'),
+})
+
+export const PullResultSchema = z.object({
+  state: z.enum(['updated', 'up-to-date', 'skipped', 'error']),
+  code: z.string(),
+  message: z.string(),
+  branch: z.string().nullable(),
+  fetched: z.boolean(),
+  checkedAt: z.string(),
+})
+export type PullResult = z.infer<typeof PullResultSchema>

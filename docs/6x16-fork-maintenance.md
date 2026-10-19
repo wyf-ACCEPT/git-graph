@@ -8,6 +8,10 @@ updates are optional.
 
 ## Custom behavior
 
+- The current graph repository can pull automatically every five minutes, with a
+  persistent per-repository switch and manual retry. It only fast-forwards a clean
+  checked-out branch with a remote upstream. See `6x19-auto-pull.md`.
+
 - Graph and detail timestamps show local time to the second. The current local
   year is omitted; other years remain visible. Tooltips retain the Git ISO value.
 - Double-clicking a non-current local branch switches directly after a fresh

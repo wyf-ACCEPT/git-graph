@@ -10,8 +10,9 @@
 
 A **local git commit-graph viewer**: a standalone web service that lists the
 git repositories at a served root (or the exact set a repositories file names)
-and renders their commit DAGs, and — its one
-write — checks out a branch, tag, or commit from a context menu on the graph. Sibling of
+and renders their commit DAGs. Its write actions check out a branch, tag, or
+commit and safely pull a clean
+current branch with fast-forward-only updates. Sibling of
 `binp-file-explorer` in shape and conventions (local-machine service-first;
 later embeddable in nightshift-ui as a module).
 
@@ -186,8 +187,11 @@ consumers (standalone instance · shared package · nightshift-ui module):
   `/api/git/working` + `/api/git/working/diff` (the working tree — uncommitted
   changes vs HEAD, and one file of it; tracked via `git diff HEAD`, untracked via
   `git ls-files --others` diffed from `/dev/null`, membership-guarded path).
-  - **The write surface** is exactly one route, `POST /api/git/checkout`
-    (issue #2's first slice). It holds the read routes' membership line in
+  - **The write surfaces** are `POST /api/git/checkout` and `POST /api/git/pull`.
+    Both resolve served-repository membership and share the cross-origin guard
+    and per-repository writer lock. Pull is a bounded fetch followed by a fresh
+    clean-worktree/branch check and fast-forward-only integration; see
+    `docs/6x19-auto-pull.md`. Checkout holds the read routes' membership line in
     `resolveCheckout`: a branch must be one `for-each-ref refs/heads` lists, a
     tag one `refs/tags` lists (handed on as the full refname, so a same-named
     branch cannot win), a commit hash must `rev-parse` to a commit whose full hash
@@ -471,6 +475,8 @@ covered too: `services/port.test.ts` (probe/walk against real binds),
 Currently 342 tests across 27 files.
 
 ## UX conventions
+
+- Automatic pull (2026-10-19): the current graph repository defaults to a five-minute timer with a persistent per-repository switch and explicit manual retry. Do not pull immediately on page load/selection. Pause while Git actions or confirmations are active. Use `useAutoPull` and `AutoPullControl`; share the server writer lock with checkout. Dirty, detached, untracked, diverged and active-operation states skip; a network failure is visible and retryable. Preserve ignored local files with `--no-overwrite-ignore`. No stash, rebase, reset, merge commit or force is permitted. The existing runtime palette in `src/theme.css`, controls and confirmation frame remain canonical; see `docs/6x19-auto-pull.md`.
 
 - ADR-0019: fuzzy matches highlight the matched characters (`<mark>`).
 - Ref pills: one pill per ref *identity*, not per `%d` decoration. A branch that

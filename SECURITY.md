@@ -52,8 +52,12 @@ What **is** in scope:
   granted only to an `Origin` that exactly equals an entry of
   `GIT_GRAPH_ALLOWED_ORIGINS` (none by default); a grant to any other origin is in
   scope.
-- **Any write other than an explicitly requested checkout.**
-  `POST /api/git/checkout` is the only route that changes a repository.
+- **Any write other than an explicitly requested checkout or enabled safe pull.**
+  `POST /api/git/checkout` and `POST /api/git/pull` can change a repository.
+  Graph tabs enable a five-minute safe-pull timer by default and expose a persistent
+  per-repository switch. Pull admits only clean-worktree fast-forwards of the
+  checked-out branch's configured upstream; the same Host/Origin/action-header
+  guards protect both routes.
   Context-menu actions require confirmation; double-clicking a local branch
   permits a direct switch after a fresh clean-worktree check, with confirmation
   required if the check finds changes. Any other way to mutate a repository is a

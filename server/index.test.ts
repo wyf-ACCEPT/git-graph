@@ -188,6 +188,22 @@ const postCheckout = (headers: Record<string, string>, body: string) => postChec
 
 const tagCheckout = '{"repo":"victim","target":{"kind":"tag","name":"v1"}}'
 
+test('the pull route uses the same Host, Origin and action-header guards', async () => {
+  const before = headState()
+  const body = JSON.stringify({ repo: 'victim', manual: true })
+  const post = (extra: Record<string, string>) => sendRaw(
+    'POST /api/git/pull HTTP/1.1\r\n' + headerLines({ Host: `127.0.0.1:${port}`, 'Content-Type': 'application/json',
+      'Content-Length': String(Buffer.byteLength(body)), Connection: 'close', ...extra }) + `\r\n${body}`,
+  )
+  expect((await post({ 'X-Git-Graph-Action': '1', Origin: 'https://evil.example' })).status).toBe(403)
+  expect((await post({})).status).toBe(403)
+  expect((await post({ Host: 'evil.example', 'X-Git-Graph-Action': '1' })).status).toBe(421)
+  const own = await post({ 'X-Git-Graph-Action': '1', Origin: `http://127.0.0.1:${port}`, 'Sec-Fetch-Site': 'same-origin' })
+  expect(own.status).toBe(200)
+  expect(JSON.parse(own.body).state).toBe('skipped')
+  expect(headState()).toEqual(before)
+})
+
 describe('the Host guard on the running server', () => {
   test('serves loopback names, with and without a port, and the names GIT_GRAPH_ALLOWED_HOSTS lists', async () => {
     for (const host of ['localhost', `localhost:${port}`, `127.0.0.1:${port}`, `[::1]:${port}`, ALLOWED_HOST]) {

@@ -29,6 +29,7 @@ import type { RepositorySet, ServedRepository } from './repository-set'
 import { checkoutArguments, type ResolvedCheckout } from '../../shared/checkout'
 import { MAX_FILE_CHANGES, parseCommitFileChanges } from '../../shared/commitDetail'
 import { FIELD_SEPARATOR } from '../../shared/gitLog'
+import { createPullService } from './pull'
 import type {
   BranchList,
   CheckoutResult,
@@ -101,6 +102,7 @@ export type CheckoutFailureReason =
   | 'invalid-hash'
   | 'checkout-refused'
   | 'branch-exists'
+  | 'repository-busy'
   | 'worktree-dirty'
   | 'git-failed'
 
@@ -126,7 +128,11 @@ const nonEmptyLines = (stdout: string) =>
     .map((line) => line.trim())
     .filter(Boolean)
 
-export function createGitService({ repositories: repositorySet }: { repositories: RepositorySet }) {
+export function createGitService({ repositories: repositorySet, now, networkTimeoutMs }: {
+  repositories: RepositorySet; now?: () => number; networkTimeoutMs?: number
+}) {
+  const busyRepositories = new Set<string>()
+  const { pull } = createPullService({ resolveRepository, runGit, busyRepositories, now, networkTimeoutMs })
   /** The served repositories as the listing route reports them (no disk paths). */
   async function listRepositories(): Promise<RepositoryList> {
     const { rootPath, repositories } = await repositorySet.list()
@@ -913,7 +919,7 @@ export function createGitService({ repositories: repositorySet }: { repositories
    * carrying git's stderr verbatim, so the user reads git's reason rather than
    * ours.
    */
-  async function checkout(
+  async function performCheckout(
     repositoryIdentifier: string,
     target: CheckoutTarget,
     { requireClean = false }: { requireClean?: boolean } = {},
@@ -957,6 +963,15 @@ export function createGitService({ repositories: repositorySet }: { repositories
     }
   }
 
+  async function checkout(identifier: string, target: CheckoutTarget, options: { requireClean?: boolean } = {}): Promise<CheckoutOutcome> {
+    const repository = await resolveRepository(identifier)
+    if (!repository) return { ok: false, reason: 'unknown-repository' }
+    if (busyRepositories.has(repository.absolutePath)) return { ok: false, reason: 'repository-busy', detail: 'Another Git action is running in this repository. Try again when it finishes.' }
+    busyRepositories.add(repository.absolutePath)
+    try { return await performCheckout(identifier, target, options) }
+    finally { busyRepositories.delete(repository.absolutePath) }
+  }
+
   return {
     listRepositories,
     readCommitLog,
@@ -968,6 +983,7 @@ export function createGitService({ repositories: repositorySet }: { repositories
     readWorkingTree,
     readWorkingFileDiff,
     checkout,
+    pull,
   }
 }
 

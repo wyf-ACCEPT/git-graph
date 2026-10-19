@@ -125,7 +125,7 @@ or a file that cannot be read, is a fatal startup error.
 
 ## What it changes
 
-**Checkout is the one write.** Everything else is read-only. Context-menu
+**Checkout and safe pull are the writes.** Other views are read-only. Context-menu
 checkouts state the command and repository before confirmation; detached
 checkouts explain their consequence. Double-clicking a non-current local branch
 switches directly after a fresh server-side clean-worktree check. Uncommitted
@@ -140,6 +140,28 @@ creating and checking out a local tracking branch. The context menu offers the
 same action for keyboard users. `origin/HEAD` is excluded. Confirmation uses the
 current local remote-tracking ref without fetching, refuses an existing local
 branch, and retains Git's protection against overwriting uncommitted work.
+
+## Automatic pull
+
+The graph checks the currently viewed repository every five minutes, enabled by
+default. The **Auto pull · 5m** switch remembers the choice separately for each
+repository. **Pull current branch now** runs the same checks immediately, even
+when automatic checks are off. No pull runs immediately on opening the graph or
+switching repositories; closing the graph stops its timer. Background browser
+throttling may delay a check.
+
+A safe pull fetches the checked-out branch's configured remote, then updates
+local files only by fast-forward. Dirty files/index, detached HEAD, missing
+upstream, active Git operations, and divergent history are skipped with a visible
+reason. Branch and worktree state are checked again after downloading. There is
+no rebase, merge commit, stash, reset, or forced checkout. Ignored local files
+are not silently overwritten. A shared per-repository writer lock protects
+pulls and checkouts, and automatic checks are deduplicated across graph tabs.
+
+Downloads are non-interactive with a 30-second deadline. Failures are shown in
+the header and can be retried with the manual button. The file-update phase is
+not killed by the network deadline. See
+[implementation and safety notes](docs/6x19-auto-pull.md).
 
 ## Security model — loopback by default
 

@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia'
 import { additionalAllowedHosts, allowedOrigins, servedRepositories } from '../config'
 import { checkMutationRequest } from '../services/mutation-guard'
+import { PullRequestSchema, PullResultSchema } from '../../shared/pull'
 import {
   createGitService,
   type CheckoutFailureReason,
@@ -163,6 +164,7 @@ function checkoutFailureStatusAndMessage(
     // Its stderr is the message, verbatim: the user needs git's reason, not ours.
     case 'checkout-refused':
     case 'branch-exists':
+    case 'repository-busy':
       return { statusCode: 409, message: detail || 'git refused the checkout' }
     case 'worktree-dirty':
       return { statusCode: 409, message: 'The working tree has uncommitted changes. Confirm before switching branches.' }
@@ -493,6 +495,26 @@ export const gitRoutes = new Elysia()
           'stderr. The request must carry the `X-Git-Graph-Action: 1` header and a JSON body, and a browser ' +
           'request marked cross-site, or whose `Origin` names a host the server does not answer for, is ' +
           'refused with 403, so a foreign web page cannot trigger it.',
+      },
+    },
+  )
+  .post(
+    '/api/git/pull',
+    async ({ body, status }) => {
+      const outcome = await gitService.pull(body.repo, { manual: body.manual })
+      if (!outcome.ok) return status(404, { error: 'No such repository among those served.' })
+      return outcome.result
+    },
+    {
+      body: PullRequestSchema,
+      beforeHandle({ request, status }) {
+        const verdict = checkMutationRequest(request.headers, { additionalAllowedHosts, allowedOrigins })
+        if (!verdict.ok) return status(403, { error: verdict.reason })
+      },
+      response: { 200: PullResultSchema, 403: GitErrorSchema, 404: GitErrorSchema },
+      detail: {
+        tags: ['git'], summary: 'Safely pull the checked-out branch',
+        description: 'Fetch its configured remote, recheck the branch and clean worktree, then fast-forward only. Dirty, detached, untracked, diverged, or busy states are skipped. Automatic attempts are deduplicated for five minutes; an explicit manual request may retry sooner.',
       },
     },
   )

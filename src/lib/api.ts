@@ -2,6 +2,7 @@ import {
   MUTATION_REQUEST_HEADER,
   MUTATION_REQUEST_HEADER_VALUE,
 } from '../../shared/mutationRequest'
+import { PullResultSchema, type PullResult } from '../../shared/pull'
 import {
   BranchListSchema,
   CheckoutResultSchema,
@@ -27,6 +28,14 @@ export class GitRequestError extends Error {
     super(message)
     this.name = 'GitRequestError'
   }
+}
+
+export async function pullRepository(repo: string, manual = false): Promise<PullResult> {
+  return PullResultSchema.parse(await requestJson('/api/git/pull', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', [MUTATION_REQUEST_HEADER]: MUTATION_REQUEST_HEADER_VALUE },
+    body: JSON.stringify({ repo, manual }),
+  }))
 }
 
 async function requestJson(path: string, init?: RequestInit): Promise<unknown> {

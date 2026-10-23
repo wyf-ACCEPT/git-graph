@@ -1,0 +1,81 @@
+AGENTS.md
+  s_299dc04098b816::t_82ba61524608e5 190-191,479
+DESIGN.md
+  s_299dc04098b816::t_5016074d0486bc 1-19
+README.md
+  s_299dc04098b816::t_da1e67e46d4f05 144-174
+docs/6x16-fork-maintenance.md
+  s_e1406b396038b6::t_d9cae4812cad26 71-76
+docs/6x19-auto-pull.md
+  s_e1406b396038b6::t_b6d4ca186d34d3 1-21,25-51
+docs/6x23-branch-sync.md
+  s_299dc04098b816::t_cced7df6fefc72 1-42
+server/index.test.ts
+  s_e1406b396038b6::t_cf32cee5ec9253 204,521-541
+server/routes/git.ts
+  s_e1406b396038b6::t_1561ab3a37e7c1 2,5,505-509,521,526-555
+server/services/branchSync.ts
+  s_299dc04098b816::t_ded3b929601c7e 1-66
+server/services/git.ts
+  s_299dc04098b816::t_11b4d96d3afce7 33,136-137,989-991
+server/services/pull.test.ts
+  s_299dc04098b816::t_9c00033462a448 162-314
+server/services/pull.ts
+  s_299dc04098b816::t_4542d7d4d15b53 12-18,37,52,73,90-104,109-111,113,116,124,151-188
+server/services/unicodePaths.test.ts
+  s_e1406b396038b6::t_d841d3842af407 1-62
+shared/branchSync.ts
+  s_299dc04098b816::t_57260469af235e 1-12
+shared/commitDetail.ts
+  s_e1406b396038b6::t_b45c96b3ee2a11 1,68-69
+shared/gitPath.test.ts
+  s_e1406b396038b6::t_5335a599065c1b 1-25
+shared/gitPath.ts
+  s_e1406b396038b6::t_bdca867944e663 1-35
+shared/pull.ts
+  s_299dc04098b816::t_d0dd97de1a2c9c 7-8,12-13
+src/App.tsx
+  s_299dc04098b816::t_9eb530c3b0a0e1 1-2,32,102-104,108-109,113-114,190,339,382,384-397,401-427,434,493-494,565-566,568,628-629,688,694-703
+src/components/AutoPullControl.test.tsx
+  s_299dc04098b816::t_9edca945b374a0 1-37
+src/components/AutoPullControl.tsx
+  s_299dc04098b816::t_056f1615eaf709 1-2,5-7,11,14,16,20-21,26-34
+src/components/RefPill.test.tsx
+  s_299dc04098b816::t_ace30dc540dad0 103,111,116
+src/components/RefPill.tsx
+  s_299dc04098b816::t_9eb96a6fb82b5c 73-74,89,97
+src/lib/api.ts
+  s_299dc04098b816::t_180201bb1328d4 5,34,38,157-174
+src/lib/autoPull.test.tsx
+  s_299dc04098b816::t_4aa6cefb76db3f 70-88
+src/lib/autoPull.ts
+  s_299dc04098b816::t_644ee3df594fe7 3,11-12,17,56
+src/lib/branchSync.test.tsx
+  s_299dc04098b816::t_5a45c94521301a 1-69
+src/lib/branchSync.ts
+  s_299dc04098b816::t_636cd460a94430 1-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cf64bc1644c4fd6475fda230104e2093a90af4a0",
+  "prompts": {},
+  "sessions": {
+    "s_299dc04098b816": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1677b-a8cb-7dd0-9f6d-f716bb71cb89",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    },
+    "s_e1406b396038b6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16774-4a6c-7560-ad9c-4d4495a6a4f1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}

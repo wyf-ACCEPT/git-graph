@@ -1,0 +1,39 @@
+AGENTS.md
+  s_e1406b396038b6::t_99078d967ad217 562-563
+DESIGN.md
+  s_e1406b396038b6::t_2559c9e1ea10ef 33-41
+README.md
+  s_e1406b396038b6::t_fd1b1b4c833c37 114-116
+shared/graphLayout.test.ts
+  s_e1406b396038b6::t_198a36784140cc 154-173
+shared/graphLayout.ts
+  s_e1406b396038b6::t_64996201537f63 50,54-57
+src/App.tsx
+  s_e1406b396038b6::t_c5a8955e501bf8 648-651,687-688
+src/components/CommitGraph.test.tsx
+  s_e1406b396038b6::t_25eb108336bb15 400-466
+src/components/CommitGraph.tsx
+  s_e1406b396038b6::t_0985c0b462b4e3 10,17-19,36,134-137,140,153-155,158-165,239,242,261-265,283-285
+src/components/UncommittedChangesRow.tsx
+  s_e1406b396038b6::t_2c6edb473674d3 1,3,6-8,17-18,41,74-78
+src/components/graphGeometry.ts
+  s_e1406b396038b6::t_bc049445c33bf9 1-14
+src/components/index.ts
+  s_e1406b396038b6::t_0eb550304c2010 39-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fc0f9296225b46ea7c88389288337abb1e1668fb",
+  "prompts": {},
+  "sessions": {
+    "s_e1406b396038b6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16774-4a6c-7560-ad9c-4d4495a6a4f1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}

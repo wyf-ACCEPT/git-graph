@@ -1,0 +1,79 @@
+AGENTS.md
+  s_e1406b396038b6::t_1a695b80dfbd08 191,479,560-561
+DESIGN.md
+  s_e1406b396038b6::t_64344c2ff82c52 20-27
+README.md
+  s_e1406b396038b6::t_c89fb3f06e6bac 128,176-198
+UX-CONTRACT.md
+  s_e1406b396038b6::t_533a188825359a 1-38
+docs/6x23-repository-actions.md
+  s_e1406b396038b6::t_4354bdd3653ddf 1-61
+premium-ui.json
+  s_e1406b396038b6::t_94abd650eb3fa6 1-18
+server/index.test.ts
+  s_299dc04098b816::t_9aa67deb150f0d 542-569
+server/routes/git.ts
+  s_aef8782f66d061::t_c68f4f49ce262a 2,557-587
+server/services/actions.test.ts
+  s_299dc04098b816::t_2bb99e551553c0 1-220
+server/services/actions.ts
+  s_e1406b396038b6::t_857412dd4fe4cb 1-212
+server/services/git.ts
+  s_aef8782f66d061::t_d1b53d244382cb 34,137-142,985-987
+shared/gitActions.test.ts
+  s_e1406b396038b6::t_f66c4b08bf6aa8 66-68,71-73,75-77,107-110,126,176,186
+shared/gitActions.ts
+  s_299dc04098b816::t_045ca6c9a39dcb 17-26,103-104,139-141,164-166,190-191,218-221
+shared/index.ts
+  s_aef8782f66d061::t_a3cf5be31967a9 25-26
+shared/repositoryActions.ts
+  s_299dc04098b816::t_eb493384dafbc8 1-86
+src/App.tsx
+  s_299dc04098b816::t_687e1b3f4a5311 1-4,106-109,121,199-200,203-217,453-482,489,548-549,620-621,623,630-644,698-699,721,758-759,765-769
+src/components/CommitDetailPanel.test.tsx
+  s_e1406b396038b6::t_89755f14163ddc 292,298
+src/components/ConfirmActionDialog.tsx
+  s_e1406b396038b6::t_11bf6951f6a33a 1,17-19,28,31,38-44,46-47,52-60,69-73,75,99,103,122,133,154-155
+src/components/GitActionMenu.tsx
+  s_299dc04098b816::t_b75bbd6a8eff62 10-14,53,65-74,105,134-136,266
+src/components/RepositoryActionDialog.test.tsx
+  s_e1406b396038b6::t_52d1e9ec8648e2 1-81
+src/components/RepositoryActionDialog.tsx
+  s_e1406b396038b6::t_6bf090749459d8 1-72
+src/index.css
+  s_e1406b396038b6::t_0be7be74702cee 13-32
+src/lib/api.ts
+  s_aef8782f66d061::t_9adbfbe9cf4c73 1,176-191
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "90faf4eb8ab0f2d96a31d2cc3b36a92a06b97357",
+  "prompts": {},
+  "sessions": {
+    "s_299dc04098b816": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1677b-a8cb-7dd0-9f6d-f716bb71cb89",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    },
+    "s_aef8782f66d061": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15353-b94d-7502-a625-2c1d8bc31f9d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    },
+    "s_e1406b396038b6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16774-4a6c-7560-ad9c-4d4495a6a4f1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}

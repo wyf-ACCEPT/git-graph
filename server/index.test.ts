@@ -201,6 +201,7 @@ test('the pull route uses the same Host, Origin and action-header guards', async
   const own = await post({ 'X-Git-Graph-Action': '1', Origin: `http://127.0.0.1:${port}`, 'Sec-Fetch-Site': 'same-origin' })
   expect(own.status).toBe(200)
   expect(JSON.parse(own.body).state).toBe('skipped')
+  expect(JSON.parse(own.body).code).toBe('no-remotes')
   expect(headState()).toEqual(before)
 })
 
@@ -516,4 +517,25 @@ describe('embedding configuration that cannot be honoured fails the boot', () =>
       rmSync(listDirectory, { recursive: true, force: true })
     }
   })
+})
+
+test('fetch-all is protected by Host, Origin and action-header guards and preserves HEAD', async () => {
+  const before = headState()
+  const post = (extra: Record<string, string>, repo = 'victim') => {
+    const body = JSON.stringify({ repo, manual: true })
+    return sendRaw('POST /api/git/fetch HTTP/1.1\r\n' + headerLines({
+      Host: `127.0.0.1:${port}`, 'Content-Type': 'application/json',
+      'Content-Length': String(Buffer.byteLength(body)), Connection: 'close', ...extra,
+    }) + `\r\n${body}`)
+  }
+  expect((await post({ 'X-Git-Graph-Action': '1', Origin: 'https://evil.example' })).status).toBe(403)
+  expect((await post({})).status).toBe(403)
+  expect((await post({ Host: 'evil.example', 'X-Git-Graph-Action': '1' })).status).toBe(421)
+  expect((await post({ 'X-Git-Graph-Action': '1', 'Sec-Fetch-Site': 'cross-site' })).status).toBe(403)
+  const headers = { 'X-Git-Graph-Action': '1', Origin: `http://127.0.0.1:${port}`, 'Sec-Fetch-Site': 'same-origin' }
+  const own = await post(headers)
+  expect(own.status).toBe(200)
+  expect(JSON.parse(own.body).code).toBe('no-remotes')
+  expect((await post(headers, '../outside')).status).toBe(404)
+  expect(headState()).toEqual(before)
 })

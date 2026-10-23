@@ -2,6 +2,7 @@ import {
   MUTATION_REQUEST_HEADER,
   MUTATION_REQUEST_HEADER_VALUE,
 } from '../../shared/mutationRequest'
+import { BranchSyncSchema, PushResultSchema } from '../../shared/branchSync'
 import { PullResultSchema, type PullResult } from '../../shared/pull'
 import {
   BranchListSchema,
@@ -30,11 +31,11 @@ export class GitRequestError extends Error {
   }
 }
 
-export async function pullRepository(repo: string, manual = false): Promise<PullResult> {
+export async function pullRepository(repo: string, manual = false, options: { expectedBranch?: string; originBranch?: string } = {}): Promise<PullResult> {
   return PullResultSchema.parse(await requestJson('/api/git/pull', {
     method: 'POST',
     headers: { 'content-type': 'application/json', [MUTATION_REQUEST_HEADER]: MUTATION_REQUEST_HEADER_VALUE },
-    body: JSON.stringify({ repo, manual }),
+    body: JSON.stringify({ repo, manual, ...options }),
   }))
 }
 
@@ -152,4 +153,22 @@ export async function checkout(
       body: JSON.stringify({ repo: repositoryRelativePath, target, requireClean }),
     }),
   )
+}
+
+export async function fetchBranchSync(repo: string, originBranch?: string) {
+  const query = new URLSearchParams({ repo, ...(originBranch ? { originBranch } : {}) })
+  return BranchSyncSchema.parse(await requestJson(`/api/git/branch-sync?${query}`))
+}
+export async function pushRepository(repo: string, expectedBranch: string) {
+  return PushResultSchema.parse(await requestJson('/api/git/push', {
+    method: 'POST', headers: { 'content-type': 'application/json', [MUTATION_REQUEST_HEADER]: MUTATION_REQUEST_HEADER_VALUE },
+    body: JSON.stringify({ repo, expectedBranch }),
+  }))
+}
+
+export async function fetchAllRemotes(repo: string, manual = false): Promise<PullResult> {
+  return PullResultSchema.parse(await requestJson('/api/git/fetch', {
+    method: 'POST', headers: { 'content-type': 'application/json', [MUTATION_REQUEST_HEADER]: MUTATION_REQUEST_HEADER_VALUE },
+    body: JSON.stringify({ repo, manual }),
+  }))
 }

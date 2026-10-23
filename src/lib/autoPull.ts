@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AUTO_PULL_INTERVAL_MS, type PullResult } from '../../shared/pull'
-import { pullRepository } from './api'
+import { fetchAllRemotes } from './api'
 import { announceRepositoryChange } from './repositoryChanges'
 
 const storageKey = (key: string) => `git-graph:auto-pull:${key}`
@@ -8,13 +8,13 @@ function readEnabled(key: string): boolean {
   try { return window.localStorage.getItem(storageKey(key)) !== 'off' } catch { return true }
 }
 
-/** Current graph only; no immediate pull on page load or repository selection. */
-export function useAutoPull({ repository, repositoryKey, paused, onRefresh, request = pullRepository }: {
+/** Fetch all remotes of the current graph; no immediate fetch on page load or selection. */
+export function useAutoPull({ repository, repositoryKey, paused, onRefresh, request = fetchAllRemotes }: {
   repository: string | null
   repositoryKey: string | null
   paused: boolean
   onRefresh: () => void
-  request?: typeof pullRepository
+  request?: typeof fetchAllRemotes
 }) {
   const [preferences, setPreferences] = useState<Record<string, boolean>>({})
   const [runningKeys, setRunningKeys] = useState<Set<string>>(() => new Set())
@@ -53,7 +53,7 @@ export function useAutoPull({ repository, repositoryKey, paused, onRefresh, requ
     try {
       result = await request(repo, manual)
     } catch (error) {
-      result = { state: 'error', code: 'request-failed', message: `Pull failed: ${error instanceof Error ? error.message : 'the service is unavailable'}`,
+      result = { state: 'error', code: 'request-failed', message: `Remote sync failed: ${error instanceof Error ? error.message : 'the service is unavailable'}`,
         fetched: false, branch: null, checkedAt: new Date().toISOString() }
     }
     try { if (result.fetched) announceRepositoryChange(repo) } catch { /* The active tab can still refresh without BroadcastChannel. */ }

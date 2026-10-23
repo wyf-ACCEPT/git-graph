@@ -1,3 +1,5 @@
+import type { BranchSync } from '../shared/branchSync'
+import { fetchBranchSync, pullRepository, pushRepository } from './lib/api'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { IconCircleCheck, IconAlertCircle, IconGitMerge, IconSearch, IconX } from '@tabler/icons-react'
 import { describeCheckout, findHeadState } from '../shared/gitActions'
@@ -27,6 +29,7 @@ import { useTheme } from './lib/theme'
 import { filePreviewHref } from './lib/filePreview'
 import { useDetailLayout } from './lib/detailLayout'
 import { useAutoPull } from './lib/autoPull'
+import { useBranchSync } from './lib/branchSync'
 import { AutoPullControl } from './components/AutoPullControl'
 import { announceRepositoryChange, useRepositoryChanges } from './lib/repositoryChanges'
 import {
@@ -96,14 +99,19 @@ export function App() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const [notice, setNotice] = useState<GitActionNotice | null>(null)
   const [pendingCheckoutDirty, setPendingCheckoutDirty] = useState(false)
+  const [pendingPull, setPendingPull] = useState<BranchSync | null>(null)
+  const [syncRunning, setSyncRunning] = useState(false)
+  const syncInFlight = useRef(false)
   const checkoutInFlight = useRef(false)
   const currentRepository = useRef(selectedRepository)
   currentRepository.current = selectedRepository
+  const refreshRepository = useCallback(() => setRepositoryVersion(version => version + 1), [])
+  const sync = useBranchSync({ repository: selectedRepository, version: repositoryVersion, onRepositoryChange: refreshRepository })
   const autoPull = useAutoPull({
     repository: selectedRepository,
     repositoryKey: selectedRepository === null ? null : JSON.stringify([repositoryList?.rootPath, selectedRepository]),
-    paused: isCheckingOut || pendingCheckout !== null || contextMenu !== null,
-    onRefresh: useCallback(() => setRepositoryVersion((version) => version + 1), []),
+    paused: isCheckingOut || syncRunning || pendingPull !== null || pendingCheckout !== null || contextMenu !== null,
+    onRefresh: refreshRepository,
   })
 
   // Loading a syntax grammar the first time a diff is expanded costs about half
@@ -179,6 +187,7 @@ export function App() {
     setWorkingTree(null)
     setContextMenu(null)
     setPendingCheckout(null)
+    setPendingPull(null)
   }, [selectedRepository])
 
   // A checkout in another tab changes what this one shows.
@@ -327,7 +336,7 @@ export function App() {
 
   async function runCheckout(target: CheckoutTarget, requireClean = false) {
     const repository = selectedRepository
-    if (repository === null || checkoutInFlight.current || autoPull.isRunning) return
+    if (repository === null || checkoutInFlight.current || syncInFlight.current || autoPull.isRunning) return
     checkoutInFlight.current = true
     setIsCheckingOut(true)
     setCheckoutError(null)
@@ -370,9 +379,50 @@ export function App() {
   }
 
   function checkoutRemoteBranch(branchName: string) {
-    if (pendingCheckout !== null || checkoutInFlight.current || localBranchNames?.includes(branchName)) return
+    if (pendingCheckout !== null || pendingPull !== null || checkoutInFlight.current || syncInFlight.current || autoPull.isRunning) return
     setContextMenu(null)
+    if (localBranchNames?.includes(branchName)) {
+      const repository = selectedRepository
+      if (repository === null) return
+      syncInFlight.current = true
+      setSyncRunning(true)
+      void fetchBranchSync(repository, branchName).then(value => {
+        if (currentRepository.current !== repository) return
+        if (value.behind > 0) { setCheckoutError(null); setPendingPull(value) }
+        else setNotice({ tone: 'success', text: `Local branch ${branchName} already exists. ${value.reason}` })
+      }).catch(error => {
+        if (currentRepository.current === repository) setNotice({ tone: 'error', text: error.message })
+      }).finally(() => { syncInFlight.current = false; setSyncRunning(false) })
+      return
+    }
     requestCheckout({ kind: 'remote-branch', remote: 'origin', name: branchName })
+  }
+
+  async function runBranchSync(action: 'pull' | 'push', originBranch?: string) {
+    const repository = selectedRepository
+    const branch = originBranch ?? sync?.branch
+    if (repository === null || !branch || syncInFlight.current || checkoutInFlight.current || autoPull.isRunning) return
+    syncInFlight.current = true
+    setSyncRunning(true)
+    setCheckoutError(null)
+    try {
+      const result = action === 'push' ? await pushRepository(repository, branch) : await pullRepository(repository, true,
+        originBranch ? { originBranch } : { expectedBranch: branch })
+      if (currentRepository.current !== repository) return
+      const success = 'success' in result ? result.success : result.state === 'updated' || result.state === 'up-to-date'
+      if (!success && originBranch) setCheckoutError(result.message)
+      else { setPendingPull(null); setNotice({ tone: success ? 'success' : 'error', text: result.message }) }
+    } catch (error) {
+      if (currentRepository.current !== repository) return
+      const text = error instanceof Error ? error.message : 'Git action failed. Refresh and retry.'
+      if (originBranch) setCheckoutError(text)
+      else setNotice({ tone: 'error', text })
+    } finally {
+      announceRepositoryChange(repository)
+      if (currentRepository.current === repository) setRepositoryVersion(v => v + 1)
+      syncInFlight.current = false
+      setSyncRunning(false)
+    }
   }
 
   const loadedHashes = useMemo(() => new Set(commits.map((commit) => commit.hash)), [commits])
@@ -381,7 +431,7 @@ export function App() {
   // Esc closes the panel; ↑/↓ walk the graph while it is open, so a commit can
   // be read through without going back to the mouse. Typing in the search box
   // keeps its own arrow-key behaviour.
-  const isOverlayOpen = contextMenu !== null || pendingCheckout !== null
+  const isOverlayOpen = contextMenu !== null || pendingCheckout !== null || pendingPull !== null
   useEffect(() => {
     // An open menu or dialog owns the keyboard; ↑/↓ and Esc are theirs then.
     if (selectedCommitHash === null || isOverlayOpen) return
@@ -440,8 +490,8 @@ export function App() {
         })}
         buildCommitDiffHref={buildCommitDiffHref}
         buildCompareHref={buildCompareHref}
-        onCheckoutBranch={isCheckingOut || autoPull.isRunning ? undefined : checkoutBranch}
-        onCheckoutRemoteBranch={isCheckingOut || autoPull.isRunning ? undefined : checkoutRemoteBranch}
+        onCheckoutBranch={isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutBranch}
+        onCheckoutRemoteBranch={isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutRemoteBranch}
         localBranchNames={localBranchNames}
         fileDiff={fileDiff}
         isLoadingFileDiff={isLoadingFileDiff}
@@ -512,9 +562,10 @@ export function App() {
             </div>
 
             <span className="text-faint tabular-nums">{readout}</span>
-            <AutoPullControl enabled={autoPull.enabled} running={autoPull.isRunning}
-              paused={isCheckingOut || pendingCheckout !== null || contextMenu !== null}
+            <AutoPullControl enabled={autoPull.enabled} running={autoPull.isRunning || syncRunning}
+              paused={isCheckingOut || pendingPull !== null || pendingCheckout !== null || contextMenu !== null}
               available={selectedRepository !== null} result={autoPull.result}
+              busyLabel={syncRunning ? 'Running Git action…' : undefined} sync={sync} onBranchPull={() => { void runBranchSync('pull') }} onPush={() => { void runBranchSync('push') }}
               onToggle={autoPull.setEnabled} onPull={() => { void autoPull.pullNow() }} />
 
             <DetailLayoutToggle detailLayout={detailLayout} onSelectDetailLayout={setDetailLayout} />
@@ -574,8 +625,8 @@ export function App() {
               // panel docks to the right instead.
               selectedDetail={detailLayout === 'inline' ? detailPanel : null}
               onContextMenu={setContextMenu}
-              onCheckoutBranch={isCheckingOut || autoPull.isRunning ? undefined : checkoutBranch}
-              onCheckoutRemoteBranch={isCheckingOut || autoPull.isRunning ? undefined : checkoutRemoteBranch}
+              onCheckoutBranch={isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutBranch}
+              onCheckoutRemoteBranch={isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutRemoteBranch}
               localBranchNames={localBranchNames}
             />
           )}
@@ -634,11 +685,21 @@ export function App() {
           }}
           anchor={contextMenu.anchor}
           onClose={closeContextMenu}
-          onCheckout={isCheckingOut || autoPull.isRunning ? undefined : requestCheckout}
+          onCheckout={isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : requestCheckout}
           buildCommitHref={buildMenuCommitHref}
           buildCompareHref={buildCompareHref}
           onNotice={setNotice}
         />
+      )}
+      {pendingPull !== null && (
+        <ConfirmActionDialog description={{
+          title: `Pull existing branch ${pendingPull.branch}?`,
+          summary: `Local branch ${pendingPull.branch} already exists in ${repositoryName} and is ${pendingPull.behind} commit(s) behind origin/${pendingPull.branch}. Switch to it and pull from origin?`,
+          warnings: [pendingPull.ahead > 0 ? 'History has diverged. Fast-forward pull will be refused; resolve the divergence in your Git client.' : 'Requires a clean working tree. Updates are fast-forward only. If download or integration fails, the selected local branch remains checked out.'],
+          confirmLabel: 'Switch and pull',
+        }} isRunning={syncRunning} error={checkoutError}
+          onConfirm={() => { void runBranchSync('pull', pendingPull.branch!) }}
+          onCancel={() => { setPendingPull(null); setCheckoutError(null) }} />
       )}
       {pendingCheckout !== null && (
         <ConfirmActionDialog

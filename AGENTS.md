@@ -187,8 +187,8 @@ consumers (standalone instance · shared package · nightshift-ui module):
   `/api/git/working` + `/api/git/working/diff` (the working tree — uncommitted
   changes vs HEAD, and one file of it; tracked via `git diff HEAD`, untracked via
   `git ls-files --others` diffed from `/dev/null`, membership-guarded path).
-  - **The write surfaces** are `POST /api/git/checkout` and `POST /api/git/pull`.
-    Both resolve served-repository membership and share the cross-origin guard
+  - **The write surfaces** are `POST /api/git/checkout`, `/api/git/pull`,
+    `/api/git/fetch`, and `/api/git/push`. All resolve served-repository membership and share the cross-origin guard
     and per-repository writer lock. Pull is a bounded fetch followed by a fresh
     clean-worktree/branch check and fast-forward-only integration; see
     `docs/6x19-auto-pull.md`. Checkout holds the read routes' membership line in
@@ -476,7 +476,7 @@ Currently 342 tests across 27 files.
 
 ## UX conventions
 
-- Automatic pull (2026-10-19): the current graph repository defaults to a five-minute timer with a persistent per-repository switch and explicit manual retry. Do not pull immediately on page load/selection. Pause while Git actions or confirmations are active. Use `useAutoPull` and `AutoPullControl`; share the server writer lock with checkout. Dirty, detached, untracked, diverged and active-operation states skip; a network failure is visible and retryable. Preserve ignored local files with `--no-overwrite-ignore`. No stash, rebase, reset, merge commit or force is permitted. The existing runtime palette in `src/theme.css`, controls and confirmation frame remain canonical; see `docs/6x19-auto-pull.md`.
+- Automatic remote synchronization (updated 2026-10-23): the current graph repository defaults to a five-minute fetch of all branches from every configured remote, with the persistent Auto pull switch and the circular-arrow manual fetch. These actions never update local branches or files and work with dirty files or detached HEAD. Do not fetch immediately on page load/selection. Pause while Git actions or confirmations are active. Use `useAutoPull` and `AutoPullControl`, and share the writer lock with checkout, branch pull and push. The down arrow separately pulls only the current branch with clean-worktree and fast-forward-only checks; the up arrow separately pushes only the current branch without force. Preserve ignored files during integration. No stash, rebase, reset, merge commit or force. Existing tokens and confirmation frame remain canonical; see `docs/6x19-auto-pull.md` and `docs/6x23-branch-sync.md`.
 
 - ADR-0019: fuzzy matches highlight the matched characters (`<mark>`).
 - Ref pills: one pill per ref *identity*, not per `%d` decoration. A branch that

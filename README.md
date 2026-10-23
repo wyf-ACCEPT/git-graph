@@ -141,27 +141,37 @@ same action for keyboard users. `origin/HEAD` is excluded. Confirmation uses the
 current local remote-tracking ref without fetching, refuses an existing local
 branch, and retains Git's protection against overwriting uncommitted work.
 
-## Automatic pull
+## Remote synchronization and branch pull/push
 
-The graph checks the currently viewed repository every five minutes, enabled by
-default. The **Auto pull · 5m** switch remembers the choice separately for each
-repository. **Pull current branch now** runs the same checks immediately, even
-when automatic checks are off. No pull runs immediately on opening the graph or
-switching repositories; closing the graph stops its timer. Background browser
-throttling may delay a check.
+The graph refreshes **all branches from every remote of the currently viewed
+repository** every five minutes. The **Auto pull · 5m** switch remembers the
+choice for each repository. This is a fetch: it updates the graph's remote
+branches and commits, including newly created branches, and prunes deleted
+remote branches. Local branches, HEAD and working files are unchanged, so
+uncommitted files and detached HEAD do not prevent remote synchronization.
 
-A safe pull fetches the checked-out branch's configured remote, then updates
-local files only by fast-forward. Dirty files/index, detached HEAD, missing
-upstream, active Git operations, and divergent history are skipped with a visible
-reason. Branch and worktree state are checked again after downloading. There is
-no rebase, merge commit, stash, reset, or forced checkout. Ignored local files
-are not silently overwritten. A shared per-repository writer lock protects
-pulls and checkouts, and automatic checks are deduplicated across graph tabs.
+The three toolbar buttons have separate scopes:
 
-Downloads are non-interactive with a 30-second deadline. Failures are shown in
-the header and can be retried with the manual button. The file-update phase is
-not killed by the network deadline. See
-[implementation and safety notes](docs/6x19-auto-pull.md).
+- **Refresh** fetches all branches from every configured remote immediately.
+- **Down** pulls only the current branch from its upstream, and is enabled only
+  when the branch is behind without local commits ahead.
+- **Up** pushes only the current branch to its upstream, and is enabled only
+  when the branch is ahead without remote commits behind.
+
+Pull requires a clean worktree and fast-forwards only. Push never forces.
+Divergence disables both arrows with a visible reason. Double-clicking an
+origin ref whose local branch already exists offers confirmation to switch
+and pull when the remote branch is ahead.
+
+Automatic sync waits five minutes after opening/selecting/enabling, pauses
+while another Git action or confirmation is active, and stops with the graph.
+Background browser throttling can delay it. Manual refresh works with the
+switch off. Shared writer locking prevents overlapping service actions, and
+automatic fetch attempts are deduplicated across tabs. Downloads are
+noninteractive with a 30-second deadline per remote. One remote failing does
+not stop the others; partial success is reported and the graph is refreshed.
+See [synchronization details](docs/6x19-auto-pull.md) and
+[branch action details](docs/6x23-branch-sync.md).
 
 ## Security model — loopback by default
 

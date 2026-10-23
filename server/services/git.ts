@@ -30,6 +30,7 @@ import { checkoutArguments, type ResolvedCheckout } from '../../shared/checkout'
 import { MAX_FILE_CHANGES, parseCommitFileChanges } from '../../shared/commitDetail'
 import { FIELD_SEPARATOR } from '../../shared/gitLog'
 import { createPullService } from './pull'
+import { createBranchSyncService } from './branchSync'
 import type {
   BranchList,
   CheckoutResult,
@@ -132,7 +133,8 @@ export function createGitService({ repositories: repositorySet, now, networkTime
   repositories: RepositorySet; now?: () => number; networkTimeoutMs?: number
 }) {
   const busyRepositories = new Set<string>()
-  const { pull } = createPullService({ resolveRepository, runGit, busyRepositories, now, networkTimeoutMs })
+  const { branchSync, push } = createBranchSyncService({ resolveRepository, runGit, busyRepositories, networkTimeoutMs })
+  const { pull, fetchAll } = createPullService({ resolveRepository, runGit, busyRepositories, now, networkTimeoutMs })
   /** The served repositories as the listing route reports them (no disk paths). */
   async function listRepositories(): Promise<RepositoryList> {
     const { rootPath, repositories } = await repositorySet.list()
@@ -984,6 +986,9 @@ export function createGitService({ repositories: repositorySet, now, networkTime
     readWorkingFileDiff,
     checkout,
     pull,
+    fetchAll,
+    branchSync,
+    push,
   }
 }
 

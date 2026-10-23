@@ -100,7 +100,7 @@ describe('branch double-click shortcut', () => {
     expect(pill.getAttribute('title')).toContain('create and check out')
   })
 
-  test('existing local names, origin/HEAD, other remotes, and unknown local listings never offer creation', () => {
+  test('existing local names request a pull check; HEAD, other remotes and unknown listings stay inactive', () => {
     const requested: string[] = []
     const { container } = render(<CommitRefRow
       groups={groupRefDecorations(['origin/published', 'origin/HEAD', 'upstream/topic'], ['origin', 'upstream'])}
@@ -108,12 +108,12 @@ describe('branch double-click shortcut', () => {
       onCheckoutRemoteBranch={(name) => requested.push(name)}
     />)
     for (const pill of pillsOf(container)) fireEvent.doubleClick(pill)
-    expect(requested).toEqual([])
+    expect(requested).toEqual(['published'])
     cleanup()
     const unknown = render(<CommitRefRow groups={groupRefDecorations(['origin/topic'], ['origin'])}
       laneColor="var(--lane-0)" onCheckoutRemoteBranch={(name) => requested.push(name)} />)
     fireEvent.doubleClick(pillsOf(unknown.container)[0]!)
-    expect(requested).toEqual([])
+    expect(requested).toEqual(['published'])
   })
   test('only non-current local branches request checkout', () => {
     const requested: string[] = []

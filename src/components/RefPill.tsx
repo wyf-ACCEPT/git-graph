@@ -70,7 +70,8 @@ export function RefPill({ group, children, onContextMenu, onCheckoutBranch, onCh
   const isCheckedOut = group.kind === 'branch' && group.isHead
   const canCheckout = group.kind === 'branch' && !group.isHead && onCheckoutBranch !== undefined
   const canCreate = onCheckoutRemoteBranch !== undefined && canCreateOriginBranch(group, localBranchNames)
-  const canDoubleClick = canCheckout || canCreate
+  const canPullOrigin = onCheckoutRemoteBranch !== undefined && localBranchNames !== undefined && group.kind === 'remote' && group.remotes.includes('origin') && group.name !== 'HEAD' && localBranchNames.includes(group.name)
+  const canDoubleClick = canCheckout || canCreate || canPullOrigin
   const isSegmented = markerRemotes.length > 0
   const className = ['ref-pill', `ref-${kindClass}`]
   if (canDoubleClick) className.push('cursor-pointer')
@@ -85,7 +86,7 @@ export function RefPill({ group, children, onContextMenu, onCheckoutBranch, onCh
   return (
     <span
       className={className.join(' ')}
-      title={refGroupTitle(group) + (canCreate ? '\nDouble-click to create and check out a local branch tracking origin/' + group.name + '.' : canCheckout ? '\nDouble-click to switch branch; uncommitted changes require confirmation.' : '')}
+      title={refGroupTitle(group) + (canPullOrigin ? '\nDouble-click to check for updates to the existing local branch.' : canCreate ? '\nDouble-click to create and check out a local branch tracking origin/' + group.name + '.' : canCheckout ? '\nDouble-click to switch branch; uncommitted changes require confirmation.' : '')}
       onClick={canDoubleClick ? (event) => {
         // Keep the label stationary between clicks; expanding the row can move it.
         event.stopPropagation()
@@ -93,7 +94,7 @@ export function RefPill({ group, children, onContextMenu, onCheckoutBranch, onCh
       onDoubleClick={canDoubleClick ? (event) => {
         event.preventDefault()
         event.stopPropagation()
-        if (canCreate) onCheckoutRemoteBranch!(group.name)
+        if (canCreate || canPullOrigin) onCheckoutRemoteBranch!(group.name)
         else onCheckoutBranch!(group.name)
       } : undefined}
       onContextMenu={

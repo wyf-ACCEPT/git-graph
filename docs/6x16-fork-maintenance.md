@@ -68,3 +68,9 @@ fetch upstream, inspect the commits and file overlap, merge or cherry-pick the
 chosen changes, run validation, and then push to this fork. Keep full Git history
 available. Secrets, dependencies, runtime files, build output, logs, and private
 `.codex/` notes must stay out of commits.
+
+Git-quoted file paths are decoded from C escapes and UTF-8 octal bytes in the
+shared commit-file parser. Commit detail, comparisons and tracked working-tree
+changes use the same true paths for display, copying, previews and diff lookup.
+This works with either value of core.quotePath without changing Git config;
+rename source/destination paths and literal backslashes are preserved.

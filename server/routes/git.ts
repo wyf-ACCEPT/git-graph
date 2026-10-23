@@ -1,7 +1,8 @@
 import { Elysia } from 'elysia'
+import { BranchSyncQuerySchema, BranchSyncSchema, PushRequestSchema, PushResultSchema } from '../../shared/branchSync'
 import { additionalAllowedHosts, allowedOrigins, servedRepositories } from '../config'
 import { checkMutationRequest } from '../services/mutation-guard'
-import { PullRequestSchema, PullResultSchema } from '../../shared/pull'
+import { FetchRequestSchema, PullRequestSchema, PullResultSchema } from '../../shared/pull'
 import {
   createGitService,
   type CheckoutFailureReason,
@@ -501,7 +502,11 @@ export const gitRoutes = new Elysia()
   .post(
     '/api/git/pull',
     async ({ body, status }) => {
-      const outcome = await gitService.pull(body.repo, { manual: body.manual })
+      // Older open tabs used this endpoint for both the timer and circular refresh.
+      // Only explicitly targeted branch actions may integrate into local files.
+      const outcome = body.expectedBranch || body.originBranch
+        ? await gitService.pull(body.repo, { manual: body.manual, expectedBranch: body.expectedBranch, originBranch: body.originBranch })
+        : await gitService.fetchAll(body.repo, { manual: body.manual })
       if (!outcome.ok) return status(404, { error: 'No such repository among those served.' })
       return outcome.result
     },
@@ -513,8 +518,38 @@ export const gitRoutes = new Elysia()
       },
       response: { 200: PullResultSchema, 403: GitErrorSchema, 404: GitErrorSchema },
       detail: {
-        tags: ['git'], summary: 'Safely pull the checked-out branch',
+        tags: ['git'], summary: 'Safely pull an explicitly targeted branch, or fetch all remotes for legacy refresh callers',
         description: 'Fetch its configured remote, recheck the branch and clean worktree, then fast-forward only. Dirty, detached, untracked, diverged, or busy states are skipped. Automatic attempts are deduplicated for five minutes; an explicit manual request may retry sooner.',
       },
     },
   )
+
+  .get('/api/git/branch-sync', async ({ query, status }) => {
+    const result = await gitService.branchSync(query.repo, query.originBranch)
+    return result ?? status(404, { error: 'No such repository among those served.' })
+  }, { query: BranchSyncQuerySchema, response: { 200: BranchSyncSchema, 404: GitErrorSchema } })
+  .post('/api/git/push', async ({ body, status }) => {
+    const result = await gitService.push(body.repo, body.expectedBranch)
+    return result ?? status(404, { error: 'No such repository among those served.' })
+  }, {
+    body: PushRequestSchema, response: { 200: PushResultSchema, 403: GitErrorSchema, 404: GitErrorSchema },
+    beforeHandle({ request, status }) {
+      const verdict = checkMutationRequest(request.headers, { additionalAllowedHosts, allowedOrigins })
+      if (!verdict.ok) return status(403, { error: verdict.reason })
+    },
+  })
+
+  .post('/api/git/fetch', async ({ body, status }) => {
+    const outcome = await gitService.fetchAll(body.repo, { manual: body.manual })
+    if (!outcome.ok) return status(404, { error: 'No such repository among those served.' })
+    return outcome.result
+  }, {
+    body: FetchRequestSchema,
+    beforeHandle({ request, status }) {
+      const verdict = checkMutationRequest(request.headers, { additionalAllowedHosts, allowedOrigins })
+      if (!verdict.ok) return status(403, { error: verdict.reason })
+    },
+    response: { 200: PullResultSchema, 403: GitErrorSchema, 404: GitErrorSchema },
+    detail: { tags: ['git'], summary: 'Fetch all branches from every configured remote',
+      description: 'Refresh remote-tracking branches and reachable tags. Prune deleted remote branches. Never switches branches, fast-forwards local branches, or modifies working files. Runs even with uncommitted changes or detached HEAD. Automatic attempts are deduplicated for five minutes.' },
+  })

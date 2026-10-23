@@ -67,3 +67,22 @@ test('request failures stay visible and an explicit retry can recover', async ()
   await act(async () => { await hook.result.current.pullNow() })
   expect(hook.result.current.result).toMatchObject({ state: 'up-to-date' })
 })
+
+test('automatic timer and refresh retry use fetch-all API, never the branch pull API', async () => {
+  const originalFetch = globalThis.fetch
+  const calls: Array<{ url: string; body: unknown }> = []
+  globalThis.fetch = (async (input: unknown, init?: RequestInit) => {
+    calls.push({ url: String(input), body: JSON.parse(String(init?.body)) })
+    return new Response(JSON.stringify({ ...current, branch: null, code: 'all-remotes', fetched: true }))
+  }) as typeof fetch
+  try {
+    const hook = renderHook(() => useAutoPull({ repository: 'demo', repositoryKey: 'all-demo', paused: false, onRefresh: () => {} }))
+    expect(calls).toHaveLength(0)
+    await tick()
+    await act(async () => { await hook.result.current.pullNow() })
+    expect(calls).toEqual([
+      { url: '/api/git/fetch', body: { repo: 'demo', manual: false } },
+      { url: '/api/git/fetch', body: { repo: 'demo', manual: true } },
+    ])
+  } finally { globalThis.fetch = originalFetch }
+})

@@ -1,3 +1,4 @@
+import { decodeGitPath } from './gitPath'
 import type { CommitFileChange, FileChangeStatus } from './git.schema'
 import { FIELD_SEPARATOR, parseRefDecorations } from './gitLog'
 
@@ -64,8 +65,8 @@ function parseRawLine(line: string): { status: FileChangeStatus; path: string; p
   const isRenameOrCopy = paths.length > 1
   return {
     status,
-    path: destinationPath,
-    previousPath: isRenameOrCopy ? (paths[0] ?? null) : null,
+    path: decodeGitPath(destinationPath),
+    previousPath: isRenameOrCopy && paths[0] !== undefined ? decodeGitPath(paths[0]) : null,
   }
 }
 

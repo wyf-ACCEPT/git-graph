@@ -1,0 +1,33 @@
+DESIGN.md
+  s_e1406b396038b6::t_dc928492f1fc7c 28-32
+README.md
+  s_e1406b396038b6::t_b6c8a61a7e3cb3 120
+docs/6x23-repository-actions.md
+  s_e1406b396038b6::t_571aabdd7f7497 5-7
+shared/gitActions.test.ts
+  s_e1406b396038b6::t_85c9ee9a107fdc 64-65,67,158,185
+shared/gitActions.ts
+  s_e1406b396038b6::t_70a33e7f022d69 109-110,119-120,125,127-128,130,155-157,181-182,209-212
+src/components/GitActionMenu.test.tsx
+  s_e1406b396038b6::t_1485e11add154f 136-138,183,189-190
+src/components/GitActionMenu.tsx
+  s_e1406b396038b6::t_c56f41a5377f08 137,139-140
+src/components/RepositoryActionDialog.tsx
+  s_e1406b396038b6::t_7e22a282cb17f4 58,67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "43ed14372d9b02b24c9b5caac54c773d92a7ce73",
+  "prompts": {},
+  "sessions": {
+    "s_e1406b396038b6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16774-4a6c-7560-ad9c-4d4495a6a4f1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}

@@ -25,3 +25,8 @@ dialogs scroll within the viewport. Shared focus, pending and refusal states liv
 in ConfirmActionDialog. Operation recovery stays visible above the graph.
 Scrollbar tokens in `src/index.css` derive from the runtime canvas/faint/dim/fg
 palette and apply to every scrollable app surface, including forced-colors mode.
+
+Commit menu order follows frequency: Create branch, Create tag, Checkout, Open
+commit, Cherry-pick, then Copy commit hash. Short-hash copying is not offered.
+Menu/action option labels use plain text without trailing ellipses, including
+actions that open a dialog; review and confirmation behavior stays explicit.

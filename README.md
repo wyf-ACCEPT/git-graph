@@ -117,7 +117,7 @@ or a file that cannot be read, is a fatal startup error.
   three-dot against the default branch), or the working tree.
 - A **context menu** on every commit row and ref pill — right-click, or
   `Shift+F10` / the context-menu key on a focused row: check out a branch, a tag,
-  or a commit (detached `HEAD`, with a warning saying so), copy the full or short
+  or a commit (detached `HEAD`, with a warning saying so), copy the full
   hash, open the commit in a diff tab, or compare a branch against the default
   branch. Entries that cannot apply stay in the menu, disabled, and say why.
 - A **repository picker**, deep-linkable via `?repo=`.

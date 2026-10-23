@@ -2,8 +2,9 @@
 
 The owner requested five frequent action groups on 2026-10-23: branch creation
 at any commit, branch rename/delete, merge, cherry-pick and tag management.
-The graph context menu is the entry point; existing checkout/copy keyboard order
-is retained. Shared `gitActions` descriptors own menus and unavailable reasons.
+The graph context menu is the entry point. Commit actions begin with Create
+branch and Create tag; Copy commit hash is last. Abbreviated-hash copying is
+not offered, and action labels have no trailing ellipsis. Shared `gitActions` descriptors own menus and unavailable reasons.
 
 ## API and validation
 

@@ -59,13 +59,12 @@ describe('buildGitMenuSections', () => {
       defaultBranch: 'main',
     })
     expect(entriesOf(sections)).toEqual([
-      ['commit abc1234', 'checkout-commit', null],
-      ['commit abc1234', 'copy-commit-hash', null],
-      ['commit abc1234', 'copy-short-hash', null],
-      ['commit abc1234', 'open-commit', null],
       ['commit abc1234', 'create-branch', null],
       ['commit abc1234', 'create-tag', null],
+      ['commit abc1234', 'checkout-commit', null],
+      ['commit abc1234', 'open-commit', null],
       ['commit abc1234', 'cherry-pick', null],
+      ['commit abc1234', 'copy-commit-hash', null],
       ['branch feature', 'checkout-branch', null],
       ['branch feature', 'compare-branch', null],
       ['branch feature', 'rename-branch', null],
@@ -156,7 +155,7 @@ describe('buildGitMenuSections', () => {
       head: { hash: 'abc1234', branch: 'main' },
       defaultBranch: 'main',
     })
-    expect(commitEntries!.entries[0]).toMatchObject({ action: 'checkout-commit', unavailableReason: null })
+    expect(commitEntries!.entries.find(entry => entry.action === 'checkout-commit')).toMatchObject({ action: 'checkout-commit', unavailableReason: null })
   })
 
   test('an unknown default branch and a missing full hash disable their entries with a reason', () => {
@@ -183,7 +182,7 @@ describe('buildGitMenuSections', () => {
       defaultBranch: 'main',
     })
     const mutating = sections.flatMap((section) => section.entries.filter((entry) => entry.mutates))
-    expect(mutating.map((entry) => entry.action)).toEqual(['checkout-commit', 'create-branch', 'create-tag', 'cherry-pick', 'checkout-branch', 'rename-branch', 'delete-branch', 'merge-branch', 'checkout-tag', 'delete-tag', 'push-tag', 'delete-remote-tag'])
+    expect(mutating.map((entry) => entry.action)).toEqual(['create-branch', 'create-tag', 'checkout-commit', 'cherry-pick', 'checkout-branch', 'rename-branch', 'delete-branch', 'merge-branch', 'checkout-tag', 'delete-tag', 'push-tag', 'delete-remote-tag'])
   })
 })
 

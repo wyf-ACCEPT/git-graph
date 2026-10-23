@@ -55,7 +55,7 @@ export function RepositoryActionDialog({ repository, seed, state, onCancel, onEx
           <option value="no-ff">Create a merge commit</option><option value="default">Fast-forward when possible</option><option value="ff-only">Fast-forward only</option>
         </select></label>}
         {action.kind === 'cherry-pick' && (seed.parentCount ?? 0) > 1 && <label>Mainline parent<select className={controlClass} value={action.mainline ?? ''} disabled={running} onChange={event => update({ mainline: event.target.value ? Number(event.target.value) : undefined })}>
-          <option value="">Choose a parent…</option>{Array.from({ length: seed.parentCount! }, (_, i) => <option key={i} value={i + 1}>Parent {i + 1}{i === 0 ? ' (branch before the merge)' : ''}</option>)}
+          <option value="">Choose a parent</option>{Array.from({ length: seed.parentCount! }, (_, i) => <option key={i} value={i + 1}>Parent {i + 1}{i === 0 ? ' (branch before the merge)' : ''}</option>)}
         </select></label>}
         {action.kind === 'create-tag' && <>
           <label>Tag type<select className={controlClass} value={action.annotated ? 'annotated' : 'lightweight'} disabled={running} onChange={event => update({ annotated: event.target.value === 'annotated' })}>
@@ -64,7 +64,7 @@ export function RepositoryActionDialog({ repository, seed, state, onCancel, onEx
           {action.annotated && <label>Tag message<textarea className={`${controlClass} min-h-24 resize-none`} value={action.message} disabled={running} onChange={event => update({ message: event.target.value })} /></label>}
         </>}
         {needsRemote && <label>Remote<select className={controlClass} value={action.remote} disabled={running || action.kind === 'delete-remote-branch'} onChange={event => update({ remote: event.target.value })}>
-          <option value="">Choose a remote…</option>{state?.remotes.map(remote => <option key={remote} value={remote}>{remote}</option>)}
+          <option value="">Choose a remote</option>{state?.remotes.map(remote => <option key={remote} value={remote}>{remote}</option>)}
         </select></label>}
         {action.kind === 'operation' && <p className="text-dim">Operation: {action.operation} · {action.command}</p>}
       </div>}

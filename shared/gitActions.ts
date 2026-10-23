@@ -26,7 +26,6 @@ export type GitActionId =
   | 'delete-remote-tag'
   | 'checkout-commit'
   | 'copy-commit-hash'
-  | 'copy-short-hash'
   | 'open-commit'
   | 'checkout-branch'
   | 'checkout-remote-branch'
@@ -107,6 +106,8 @@ function commitSection({ commit, head }: GitMenuInput): GitMenuSection {
   return {
     heading: `commit ${commit.hash}`,
     entries: [
+      mutation('create-branch', 'Create branch here', commit.fullHash || commit.hash),
+      mutation('create-tag', 'Create tag here', commit.fullHash || commit.hash),
       {
         action: 'checkout-commit',
         label: 'Checkout commit (detached HEAD)',
@@ -115,30 +116,20 @@ function commitSection({ commit, head }: GitMenuInput): GitMenuSection {
         mutates: true,
       },
       {
-        action: 'copy-commit-hash',
-        label: 'Copy commit hash',
-        subject: commit.hash,
-        unavailableReason:
-          commit.fullHash === '' ? 'the full hash of this commit was not loaded — copy the short hash instead' : null,
-        mutates: false,
-      },
-      {
-        action: 'copy-short-hash',
-        label: 'Copy short hash',
-        subject: commit.hash,
-        unavailableReason: null,
-        mutates: false,
-      },
-      {
         action: 'open-commit',
         label: 'Open commit in a new tab',
         subject: commit.hash,
         unavailableReason: null,
         mutates: false,
       },
-      mutation('create-branch', 'Create branch here…', commit.fullHash || commit.hash),
-      mutation('create-tag', 'Create tag here…', commit.fullHash || commit.hash),
-      mutation('cherry-pick', 'Cherry-pick commit…', commit.fullHash || commit.hash, head.branch === null ? 'Check out a local branch first.' : null),
+      mutation('cherry-pick', 'Cherry-pick commit', commit.fullHash || commit.hash, head.branch === null ? 'Check out a local branch first.' : null),
+      {
+        action: 'copy-commit-hash',
+        label: 'Copy commit hash',
+        subject: commit.hash,
+        unavailableReason: commit.fullHash === '' ? 'The full hash was not loaded. Refresh the graph before copying.' : null,
+        mutates: false,
+      },
     ],
   }
 }
@@ -161,9 +152,9 @@ function refSection(group: RefGroup, input: GitMenuInput): GitMenuSection | null
             unavailableReason: isDetachedHere(head, commit) ? `HEAD is already detached at ${commit.hash}` : null,
             mutates: true,
           },
-          mutation('delete-tag', 'Delete local tag…', group.name),
-          mutation('push-tag', 'Push tag…', group.name),
-          mutation('delete-remote-tag', 'Delete remote tag…', group.name),
+          mutation('delete-tag', 'Delete local tag', group.name),
+          mutation('push-tag', 'Push tag', group.name),
+          mutation('delete-remote-tag', 'Delete remote tag', group.name),
         ],
       }
     case 'remote': {
@@ -187,8 +178,8 @@ function refSection(group: RefGroup, input: GitMenuInput): GitMenuSection | null
             unavailableReason: `only local branches can be compared, and ${qualifiedName} has no local branch`,
             mutates: false,
           },
-          mutation('merge-branch', 'Merge into current branch…', `refs/remotes/${group.remotes[0]}/${group.name}`, head.branch === null ? 'Check out a local branch first.' : null),
-          mutation('delete-remote-branch', 'Delete remote branch…', `${group.remotes[0]}/${group.name}`, group.name === 'HEAD' ? 'A symbolic remote HEAD cannot be deleted here.' : null),
+          mutation('merge-branch', 'Merge into current branch', `refs/remotes/${group.remotes[0]}/${group.name}`, head.branch === null ? 'Check out a local branch first.' : null),
+          mutation('delete-remote-branch', 'Delete remote branch', `${group.remotes[0]}/${group.name}`, group.name === 'HEAD' ? 'A symbolic remote HEAD cannot be deleted here.' : null),
         ],
       }
     }
@@ -215,10 +206,10 @@ function refSection(group: RefGroup, input: GitMenuInput): GitMenuSection | null
                   : null,
             mutates: false,
           },
-          mutation('rename-branch', 'Rename local branch…', group.name),
-          mutation('delete-branch', 'Delete local branch…', group.name, head.branch === group.name ? 'Check out another branch before deleting this branch.' : null),
-          mutation('merge-branch', 'Merge into current branch…', `refs/heads/${group.name}`, head.branch === null ? 'Check out a local branch first.' : head.branch === group.name ? 'This is already the current branch.' : null),
-          ...group.remotes.map(remote => mutation('delete-remote-branch', `Delete ${remote}/${group.name}…`, `${remote}/${group.name}`)),
+          mutation('rename-branch', 'Rename local branch', group.name),
+          mutation('delete-branch', 'Delete local branch', group.name, head.branch === group.name ? 'Check out another branch before deleting this branch.' : null),
+          mutation('merge-branch', 'Merge into current branch', `refs/heads/${group.name}`, head.branch === null ? 'Check out a local branch first.' : head.branch === group.name ? 'This is already the current branch.' : null),
+          ...group.remotes.map(remote => mutation('delete-remote-branch', `Delete ${remote}/${group.name}`, `${remote}/${group.name}`)),
         ],
       }
   }

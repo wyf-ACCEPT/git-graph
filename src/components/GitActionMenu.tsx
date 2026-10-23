@@ -74,7 +74,6 @@ const ACTION_ICONS: Record<GitActionId, ReactNode> = {
   'delete-remote-tag': <IconTrash size={ICON_SIZE} aria-hidden />,
   'checkout-commit': <IconGitCommit size={ICON_SIZE} aria-hidden />,
   'copy-commit-hash': <IconCopy size={ICON_SIZE} aria-hidden />,
-  'copy-short-hash': <IconCopy size={ICON_SIZE} aria-hidden />,
   'open-commit': <IconExternalLink size={ICON_SIZE} aria-hidden />,
   'checkout-branch': <IconGitBranch size={ICON_SIZE} aria-hidden />,
   'checkout-remote-branch': <IconGitBranch size={ICON_SIZE} aria-hidden />,
@@ -135,12 +134,10 @@ export function GitActionMenu({
       ? { entry, disabledReason: null, href: null, run: () => onRepositoryAction(entry) }
       : unavailable(notOfferedHere(entry))
     switch (entry.action) {
-      case 'copy-commit-hash':
-      case 'copy-short-hash': {
+      case 'copy-commit-hash': {
         if (!clipboardIsAvailable()) return unavailable('copying needs a secure context (https or localhost)')
-        const isFull = entry.action === 'copy-commit-hash'
-        const value = isFull ? commit.fullHash : commit.hash
-        return { entry, disabledReason: null, href: null, run: () => copy(value, isFull ? 'commit hash' : 'short hash') }
+        const value = commit.fullHash
+        return { entry, disabledReason: null, href: null, run: () => copy(value, 'commit hash') }
       }
       case 'open-commit': {
         const href = buildCommitHref?.(commit) ?? null

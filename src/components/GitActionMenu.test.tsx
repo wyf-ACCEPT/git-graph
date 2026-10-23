@@ -133,7 +133,9 @@ describe('GitActionMenu', () => {
     expect(document.activeElement).toBe(items.at(-1)!)
     fireEvent.keyDown(menu, { key: 'Home' })
 
-    // The first entry is "Checkout commit (detached HEAD)".
+    // Creation is first; checkout follows the two creation actions.
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
     fireEvent.keyDown(menu, { key: 'Enter' })
     expect(onCheckout).toHaveBeenCalledWith({ kind: 'commit', hash: FULL_HASH })
 
@@ -178,16 +180,14 @@ describe('GitActionMenu copy entries', () => {
     else delete (navigator as { clipboard?: unknown }).clipboard
   })
 
-  test('copies the full and the short hash, and reports it', async () => {
+  test('copies the full hash and does not offer short-hash copying', async () => {
     const onNotice = mock(() => {})
     renderMenu({ onNotice })
     await act(async () => {
       fireEvent.click(item('Copy commit hash'))
     })
-    await act(async () => {
-      fireEvent.click(item('Copy short hash'))
-    })
-    expect(written).toEqual([FULL_HASH, 'abc1234'])
+    expect(screen.queryByRole('menuitem', { name: 'Copy short hash' })).toBeNull()
+    expect(written).toEqual([FULL_HASH])
     expect(onNotice).toHaveBeenCalledWith({ tone: 'success', text: `Copied commit hash ${FULL_HASH}` })
   })
 })

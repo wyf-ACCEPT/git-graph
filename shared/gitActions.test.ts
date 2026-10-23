@@ -63,9 +63,18 @@ describe('buildGitMenuSections', () => {
       ['commit abc1234', 'copy-commit-hash', null],
       ['commit abc1234', 'copy-short-hash', null],
       ['commit abc1234', 'open-commit', null],
+      ['commit abc1234', 'create-branch', null],
+      ['commit abc1234', 'create-tag', null],
+      ['commit abc1234', 'cherry-pick', null],
       ['branch feature', 'checkout-branch', null],
       ['branch feature', 'compare-branch', null],
+      ['branch feature', 'rename-branch', null],
+      ['branch feature', 'delete-branch', null],
+      ['branch feature', 'merge-branch', null],
       ['tag v1.0', 'checkout-tag', null],
+      ['tag v1.0', 'delete-tag', null],
+      ['tag v1.0', 'push-tag', null],
+      ['tag v1.0', 'delete-remote-tag', null],
     ])
   })
 
@@ -95,6 +104,10 @@ describe('buildGitMenuSections', () => {
     expect(branchSection!.entries.map((entry) => [entry.action, entry.unavailableReason])).toEqual([
       ['checkout-branch', 'main is already checked out'],
       ['compare-branch', 'main is the default branch — comparing it against itself shows nothing'],
+      ['rename-branch', null],
+      ['delete-branch', 'Check out another branch before deleting this branch.'],
+      ['merge-branch', 'This is already the current branch.'],
+      ['delete-remote-branch', null],
     ])
   })
 
@@ -110,7 +123,7 @@ describe('buildGitMenuSections', () => {
       localBranchNames: ['main'],
     })
     expect(remoteSection!.heading).toBe('remote branch origin/published')
-    expect(remoteSection!.entries.map((entry) => entry.action)).toEqual(['checkout-remote-branch', 'compare-branch'])
+    expect(remoteSection!.entries.map((entry) => entry.action)).toEqual(['checkout-remote-branch', 'compare-branch', 'merge-branch', 'delete-remote-branch'])
     expect(remoteSection!.entries[0]!.unavailableReason).toBeNull()
     expect(remoteSection!.entries[1]!.unavailableReason).toContain('origin/published has no local branch')
     expect(checkoutTargetForEntry(remoteSection!.entries[0]!, target)).toEqual({ kind: 'remote-branch', remote: 'origin', name: 'published' })
@@ -160,7 +173,7 @@ describe('buildGitMenuSections', () => {
     expect(reasonFor('compare-branch')).toBe('no default branch is known for this repository')
   })
 
-  test('only checkouts are marked as mutating', () => {
+  test('all write actions are marked as mutating and read-only actions are not', () => {
     const target = commit({ refs: ['feature', 'tag: v1'] })
     const sections = buildGitMenuSections({
       commit: target,
@@ -170,7 +183,7 @@ describe('buildGitMenuSections', () => {
       defaultBranch: 'main',
     })
     const mutating = sections.flatMap((section) => section.entries.filter((entry) => entry.mutates))
-    expect(mutating.map((entry) => entry.action)).toEqual(['checkout-commit', 'checkout-branch', 'checkout-tag'])
+    expect(mutating.map((entry) => entry.action)).toEqual(['checkout-commit', 'create-branch', 'create-tag', 'cherry-pick', 'checkout-branch', 'rename-branch', 'delete-branch', 'merge-branch', 'checkout-tag', 'delete-tag', 'push-tag', 'delete-remote-tag'])
   })
 })
 

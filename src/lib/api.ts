@@ -1,3 +1,4 @@
+import { ActionPreviewSchema, ActionResultSchema, OperationStateSchema, type RepositoryAction } from '../../shared/repositoryActions'
 import {
   MUTATION_REQUEST_HEADER,
   MUTATION_REQUEST_HEADER_VALUE,
@@ -170,5 +171,21 @@ export async function fetchAllRemotes(repo: string, manual = false): Promise<Pul
   return PullResultSchema.parse(await requestJson('/api/git/fetch', {
     method: 'POST', headers: { 'content-type': 'application/json', [MUTATION_REQUEST_HEADER]: MUTATION_REQUEST_HEADER_VALUE },
     body: JSON.stringify({ repo, manual }),
+  }))
+}
+
+export async function fetchOperationState(repo: string) {
+  return OperationStateSchema.parse(await requestJson(`/api/git/operation?${new URLSearchParams({ repo })}`))
+}
+export async function previewRepositoryAction(repo: string, action: RepositoryAction) {
+  return ActionPreviewSchema.parse(await requestJson('/api/git/action-preview', {
+    method: 'POST', headers: { 'content-type': 'application/json', [MUTATION_REQUEST_HEADER]: MUTATION_REQUEST_HEADER_VALUE },
+    body: JSON.stringify({ repo, action }),
+  }))
+}
+export async function executeRepositoryAction(repo: string, action: RepositoryAction, token: string) {
+  return ActionResultSchema.parse(await requestJson('/api/git/action', {
+    method: 'POST', headers: { 'content-type': 'application/json', [MUTATION_REQUEST_HEADER]: MUTATION_REQUEST_HEADER_VALUE },
+    body: JSON.stringify({ repo, action, token }),
   }))
 }

@@ -22,3 +22,5 @@ export * from './refGroup'
 export * from './fuzzy'
 export * from './gitActions'
 export * from './mutationRequest'
+
+export * from './repositoryActions'

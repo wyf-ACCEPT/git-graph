@@ -188,7 +188,7 @@ consumers (standalone instance · shared package · nightshift-ui module):
   changes vs HEAD, and one file of it; tracked via `git diff HEAD`, untracked via
   `git ls-files --others` diffed from `/dev/null`, membership-guarded path).
   - **The write surfaces** are `POST /api/git/checkout`, `/api/git/pull`,
-    `/api/git/fetch`, and `/api/git/push`. All resolve served-repository membership and share the cross-origin guard
+    `/api/git/fetch`, `/api/git/push`, `/api/git/action-preview`, and `/api/git/action`. All resolve served-repository membership and share the cross-origin guard
     and per-repository writer lock. Pull is a bounded fetch followed by a fresh
     clean-worktree/branch check and fast-forward-only integration; see
     `docs/6x19-auto-pull.md`. Checkout holds the read routes' membership line in
@@ -476,7 +476,7 @@ Currently 342 tests across 27 files.
 
 ## UX conventions
 
-- Automatic remote synchronization (updated 2026-10-23): the current graph repository defaults to a five-minute fetch of all branches from every configured remote, with the persistent Auto pull switch and the circular-arrow manual fetch. These actions never update local branches or files and work with dirty files or detached HEAD. Do not fetch immediately on page load/selection. Pause while Git actions or confirmations are active. Use `useAutoPull` and `AutoPullControl`, and share the writer lock with checkout, branch pull and push. The down arrow separately pulls only the current branch with clean-worktree and fast-forward-only checks; the up arrow separately pushes only the current branch without force. Preserve ignored files during integration. No stash, rebase, reset, merge commit or force. Existing tokens and confirmation frame remain canonical; see `docs/6x19-auto-pull.md` and `docs/6x23-branch-sync.md`.
+- Automatic remote synchronization (updated 2026-10-23): the current graph repository defaults to a five-minute fetch of all branches from every configured remote, with the persistent Auto pull switch and the circular-arrow manual fetch. These actions never update local branches or files and work with dirty files or detached HEAD. Do not fetch immediately on page load/selection. Pause while Git actions or confirmations are active. Use `useAutoPull` and `AutoPullControl`, and share the writer lock with checkout, branch pull and push. The down arrow separately pulls only the current branch with clean-worktree and fast-forward-only checks; the up arrow separately pushes only the current branch without force. Preserve ignored files during integration. Automatic sync and branch pull never stash, rebase, reset, create merge commits or force. Explicit reviewed merge/cherry-pick and ref-management actions are separate; see `docs/6x23-repository-actions.md`. Existing tokens and confirmation frame remain canonical; see `docs/6x19-auto-pull.md` and `docs/6x23-branch-sync.md`.
 
 - ADR-0019: fuzzy matches highlight the matched characters (`<mark>`).
 - Ref pills: one pill per ref *identity*, not per `%d` decoration. A branch that
@@ -557,3 +557,5 @@ Currently 342 tests across 27 files.
   compare-branch controls on the row, the files-changed heading, and the branch
   ref pills. The controls stay visible and explain themselves per ADR-0025; the
   compare control appears only for local branches other than the default.
+
+- Repository actions (2026-10-23): use the shared RepositoryAction schema/menu descriptors and RepositoryActionDialog/ConfirmActionDialog. Preview and execute are membership-guarded; a reviewed fingerprint of HEAD, refs, index and operation state must still match at execution, under the same writer lock. Branch deletion uses Git's non-force check; branches checked out in other worktrees are refused. Explicit merge can create merge commits. Merge/cherry-pick require a clean worktree, protect ignored files, and expose continue/abort/skip recovery. Resolve and stage conflicts in the editor/terminal. Tag writes send only the selected tag. Remote deletions use exact object leases and never force-update another ref. Keep the automatic fetch/pull behavior unchanged.

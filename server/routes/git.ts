@@ -1,4 +1,5 @@
 import { Elysia } from 'elysia'
+import { ActionPreviewRequestSchema, ActionPreviewSchema, ActionExecuteRequestSchema, ActionResultSchema, OperationStateSchema } from '../../shared/repositoryActions'
 import { BranchSyncQuerySchema, BranchSyncSchema, PushRequestSchema, PushResultSchema } from '../../shared/branchSync'
 import { additionalAllowedHosts, allowedOrigins, servedRepositories } from '../config'
 import { checkMutationRequest } from '../services/mutation-guard'
@@ -552,4 +553,35 @@ export const gitRoutes = new Elysia()
     response: { 200: PullResultSchema, 403: GitErrorSchema, 404: GitErrorSchema },
     detail: { tags: ['git'], summary: 'Fetch all branches from every configured remote',
       description: 'Refresh remote-tracking branches and reachable tags. Prune deleted remote branches. Never switches branches, fast-forwards local branches, or modifies working files. Runs even with uncommitted changes or detached HEAD. Automatic attempts are deduplicated for five minutes.' },
+  })
+
+  .get('/api/git/operation', async ({ query, status }) => {
+    const state = await gitService.operationState(query.repo)
+    return state ?? status(404, { error: 'No such repository among those served.' })
+  }, { query: BranchListQuerySchema, response: { 200: OperationStateSchema, 404: GitErrorSchema } })
+  .post('/api/git/action-preview', async ({ body, status }) => {
+    const result = await gitService.previewAction(body.repo, body.action)
+    if (result === null) return status(404, { error: 'No such repository among those served.' })
+    if (!result.ok) return status(409, { error: result.message, code: result.code })
+    return result.value
+  }, {
+    body: ActionPreviewRequestSchema, response: { 200: ActionPreviewSchema, 403: GitErrorSchema, 404: GitErrorSchema, 409: GitErrorSchema },
+    beforeHandle({ request, status }) {
+      const verdict = checkMutationRequest(request.headers, { additionalAllowedHosts, allowedOrigins })
+      if (!verdict.ok) return status(403, { error: verdict.reason })
+    },
+    detail: { tags: ['git'], summary: 'Validate and review a branch, merge, cherry-pick, tag or recovery action' },
+  })
+  .post('/api/git/action', async ({ body, status }) => {
+    const result = await gitService.executeAction(body.repo, body.action, body.token)
+    if (result === null) return status(404, { error: 'No such repository among those served.' })
+    if (!result.ok) return status(409, { error: result.message, code: result.code })
+    return result.value
+  }, {
+    body: ActionExecuteRequestSchema, response: { 200: ActionResultSchema, 403: GitErrorSchema, 404: GitErrorSchema, 409: GitErrorSchema },
+    beforeHandle({ request, status }) {
+      const verdict = checkMutationRequest(request.headers, { additionalAllowedHosts, allowedOrigins })
+      if (!verdict.ok) return status(403, { error: verdict.reason })
+    },
+    detail: { tags: ['git'], summary: 'Execute a reviewed Git action with repository-state revalidation' },
   })

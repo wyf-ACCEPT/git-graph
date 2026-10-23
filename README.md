@@ -125,7 +125,7 @@ or a file that cannot be read, is a fatal startup error.
 
 ## What it changes
 
-**Checkout and safe pull are the writes.** Other views are read-only. Context-menu
+**Checkout, branch/tag management, merge, cherry-pick and remote synchronization are available from the graph.** Every new branch/tag/merge action has an explicit review before execution. Context-menu
 checkouts state the command and repository before confirmation; detached
 checkouts explain their consequence. Double-clicking a non-current local branch
 switches directly after a fresh server-side clean-worktree check. Uncommitted
@@ -172,6 +172,29 @@ noninteractive with a 30-second deadline per remote. One remote failing does
 not stop the others; partial success is reported and the graph is refreshed.
 See [synchronization details](docs/6x19-auto-pull.md) and
 [branch action details](docs/6x23-branch-sync.md).
+
+## Branch, merge, cherry-pick and tag actions
+
+Right-click a **commit** to create a branch or tag there, or cherry-pick that
+commit onto the current branch. Branch creation optionally checks out the new
+branch. Tags can be annotated (with a message) or lightweight.
+
+Right-click a **local branch** to rename it, delete it using Git's non-force
+merged-branch check, or merge it into the current branch. Merge options are
+create a merge commit, fast-forward when possible, or fast-forward only. Remote
+branch labels offer merge and guarded remote deletion. Checked-out branches
+cannot be deleted, and branches used by other worktrees cannot be renamed here.
+
+Right-click a **tag** to delete it locally, push just that tag to a chosen remote,
+or delete the matching remote tag while keeping the local tag. Different remote
+tags are never overwritten. Remote deletions refuse a changed remote tip.
+
+All these actions show options and a final review naming the repository, target
+and effects. A changed repository requires another review. Merge/cherry-pick
+require a clean worktree. When they stop in conflict, the graph shows a recovery
+banner: resolve and stage in your editor or terminal, then Continue; Abort is
+available, and cherry-pick also offers Skip. Cherry-picking a merge commit
+requires an explicit mainline parent choice. See [action details](docs/6x23-repository-actions.md).
 
 ## Security model — loopback by default
 

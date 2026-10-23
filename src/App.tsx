@@ -1,3 +1,7 @@
+import type { OperationState, ActionResult } from '../shared/repositoryActions'
+import type { GitMenuEntry } from '../shared/gitActions'
+import { RepositoryActionDialog, type ActionSeed } from './components/RepositoryActionDialog'
+import { fetchOperationState } from './lib/api'
 import type { BranchSync } from '../shared/branchSync'
 import { fetchBranchSync, pullRepository, pushRepository } from './lib/api'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -99,6 +103,10 @@ export function App() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const [notice, setNotice] = useState<GitActionNotice | null>(null)
   const [pendingCheckoutDirty, setPendingCheckoutDirty] = useState(false)
+  const [pendingAction, setPendingAction] = useState<ActionSeed | null>(null)
+  const [actionRunning, setActionRunning] = useState(false)
+  const [operationState, setOperationState] = useState<OperationState | null>(null)
+  const [operationError, setOperationError] = useState<string | null>(null)
   const [pendingPull, setPendingPull] = useState<BranchSync | null>(null)
   const [syncRunning, setSyncRunning] = useState(false)
   const syncInFlight = useRef(false)
@@ -110,7 +118,7 @@ export function App() {
   const autoPull = useAutoPull({
     repository: selectedRepository,
     repositoryKey: selectedRepository === null ? null : JSON.stringify([repositoryList?.rootPath, selectedRepository]),
-    paused: isCheckingOut || syncRunning || pendingPull !== null || pendingCheckout !== null || contextMenu !== null,
+    paused: pendingAction !== null || actionRunning || operationState?.operation != null || isCheckingOut || syncRunning || pendingPull !== null || pendingCheckout !== null || contextMenu !== null,
     onRefresh: refreshRepository,
   })
 
@@ -188,7 +196,24 @@ export function App() {
     setContextMenu(null)
     setPendingCheckout(null)
     setPendingPull(null)
+    setPendingAction(null)
+    setOperationState(null)
   }, [selectedRepository])
+
+  useEffect(() => {
+    if (selectedRepository === null) return
+    let active = true; let generation = 0
+    const refresh = () => {
+      const requestId = ++generation
+      void fetchOperationState(selectedRepository).then(value => {
+        if (active && requestId === generation) { setOperationState(value); setOperationError(null) }
+      }).catch(error => { if (active && requestId === generation) { setOperationState(null); setOperationError(error.message) } })
+    }
+    refresh()
+    const timer = setInterval(refresh, 15_000)
+    window.addEventListener('focus', refresh)
+    return () => { active = false; clearInterval(timer); window.removeEventListener('focus', refresh) }
+  }, [selectedRepository, repositoryVersion])
 
   // A checkout in another tab changes what this one shows.
   useRepositoryChanges(
@@ -425,13 +450,43 @@ export function App() {
     }
   }
 
+  function requestRepositoryAction(entry: GitMenuEntry) {
+    if (!contextMenu || !operationState || actionRunning || isCheckingOut || syncRunning || autoPull.isRunning || pendingAction) return
+    const remote = operationState.remotes.includes('origin') ? 'origin' : operationState.remotes[0] ?? ''
+    let seed: ActionSeed
+    switch (entry.action) {
+      case 'create-branch': seed = { action: { kind: 'create-branch', commit: entry.subject, name: '', checkout: false } }; break
+      case 'rename-branch': seed = { action: { kind: 'rename-branch', name: entry.subject, newName: entry.subject } }; break
+      case 'delete-branch': seed = { action: { kind: 'delete-branch', name: entry.subject } }; break
+      case 'delete-remote-branch': {
+        const owner = [...operationState.remotes].sort((a, b) => b.length - a.length).find(name => entry.subject.startsWith(name + '/'))
+        if (!owner) return
+        seed = { action: { kind: 'delete-remote-branch', remote: owner, name: entry.subject.slice(owner.length + 1) } }; break
+      }
+      case 'merge-branch': seed = { action: { kind: 'merge', source: entry.subject, mode: 'no-ff' } }; break
+      case 'cherry-pick': seed = { action: { kind: 'cherry-pick', commit: entry.subject }, parentCount: contextMenu.commit.parents.length }; break
+      case 'create-tag': seed = { action: { kind: 'create-tag', commit: entry.subject, name: '', annotated: true, message: '' } }; break
+      case 'delete-tag': seed = { action: { kind: 'delete-tag', name: entry.subject } }; break
+      case 'push-tag': seed = { action: { kind: 'push-tag', name: entry.subject, remote } }; break
+      case 'delete-remote-tag': seed = { action: { kind: 'delete-remote-tag', name: entry.subject, remote } }; break
+      default: return
+    }
+    setContextMenu(null); setPendingAction(seed)
+  }
+  function completedRepositoryAction(result: ActionResult) {
+    setPendingAction(null); setOperationState(result.operation)
+    setNotice({ tone: result.state === 'conflict' ? 'error' : 'success', text: result.message })
+    if (selectedRepository !== null) announceRepositoryChange(selectedRepository)
+    refreshRepository()
+  }
+
   const loadedHashes = useMemo(() => new Set(commits.map((commit) => commit.hash)), [commits])
   const isCommitLoaded = useCallback((commitHash: string) => loadedHashes.has(commitHash), [loadedHashes])
 
   // Esc closes the panel; ↑/↓ walk the graph while it is open, so a commit can
   // be read through without going back to the mouse. Typing in the search box
   // keeps its own arrow-key behaviour.
-  const isOverlayOpen = contextMenu !== null || pendingCheckout !== null || pendingPull !== null
+  const isOverlayOpen = pendingAction !== null || contextMenu !== null || pendingCheckout !== null || pendingPull !== null
   useEffect(() => {
     // An open menu or dialog owns the keyboard; ↑/↓ and Esc are theirs then.
     if (selectedCommitHash === null || isOverlayOpen) return
@@ -490,8 +545,8 @@ export function App() {
         })}
         buildCommitDiffHref={buildCommitDiffHref}
         buildCompareHref={buildCompareHref}
-        onCheckoutBranch={isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutBranch}
-        onCheckoutRemoteBranch={isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutRemoteBranch}
+        onCheckoutBranch={pendingAction !== null || actionRunning || operationState?.operation != null || isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutBranch}
+        onCheckoutRemoteBranch={pendingAction !== null || actionRunning || operationState?.operation != null || isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutRemoteBranch}
         localBranchNames={localBranchNames}
         fileDiff={fileDiff}
         isLoadingFileDiff={isLoadingFileDiff}
@@ -562,16 +617,31 @@ export function App() {
             </div>
 
             <span className="text-faint tabular-nums">{readout}</span>
-            <AutoPullControl enabled={autoPull.enabled} running={autoPull.isRunning || syncRunning}
-              paused={isCheckingOut || pendingPull !== null || pendingCheckout !== null || contextMenu !== null}
+            <AutoPullControl enabled={autoPull.enabled} running={autoPull.isRunning || syncRunning || actionRunning}
+              paused={pendingAction !== null || actionRunning || operationState?.operation != null || isCheckingOut || pendingPull !== null || pendingCheckout !== null || contextMenu !== null}
               available={selectedRepository !== null} result={autoPull.result}
-              busyLabel={syncRunning ? 'Running Git action…' : undefined} sync={sync} onBranchPull={() => { void runBranchSync('pull') }} onPush={() => { void runBranchSync('push') }}
+              busyLabel={syncRunning || actionRunning ? 'Running Git action…' : undefined} sync={sync} onBranchPull={() => { void runBranchSync('pull') }} onPush={() => { void runBranchSync('push') }}
               onToggle={autoPull.setEnabled} onPull={() => { void autoPull.pullNow() }} />
 
             <DetailLayoutToggle detailLayout={detailLayout} onSelectDetailLayout={setDetailLayout} />
             <ThemeToggle themeMode={themeMode} onSelectThemeMode={setThemeMode} />
           </div>
         </header>
+        {operationError !== null && <div role="status" className="border-b border-line bg-raised px-4 py-2 text-[12px] text-dim">Git operation status unavailable: {operationError}</div>}
+        {operationState?.operation && <section aria-label="Git operation recovery" className="border-b border-line bg-raised px-4 py-3 text-[12.5px]">
+          <div className="flex flex-wrap items-center gap-2">
+            <strong>{operationState.operation === 'other' ? 'Git operation in progress' : `${operationState.operation} in progress`}</strong>
+            <span className="text-dim">Resolve and stage conflicts in your editor or terminal, then continue here.</span>
+            <button type="button" onClick={refreshRepository} className="cursor-pointer rounded border border-line px-2 py-1 hover:bg-rowhover focus-visible:outline-2 focus-visible:outline-accent">Refresh status</button>
+            {operationState.operation !== 'other' && (['continue', ...(operationState.operation === 'cherry-pick' ? ['skip'] : []), 'abort'] as const).map(command => (
+              <button key={command} type="button" disabled={actionRunning || pendingAction !== null || (command === 'continue' && operationState.conflicts.length > 0)}
+                title={command === 'continue' && operationState.conflicts.length ? 'Resolve and stage all conflicted files first.' : `${command} the current ${operationState.operation}`}
+                onClick={() => setPendingAction({ action: { kind: 'operation', operation: operationState.operation as 'merge' | 'cherry-pick', command: command as 'continue' | 'skip' | 'abort' } })}
+                className="cursor-pointer rounded border border-line px-2 py-1 hover:bg-rowhover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45">{command === 'continue' ? 'Continue' : command === 'skip' ? 'Skip commit' : 'Abort'}</button>
+            ))}
+          </div>
+          {operationState.conflicts.length > 0 && <ul className="mt-2 max-h-32 overflow-auto font-mono text-[11.5px] text-dim">{operationState.conflicts.map(path => <li key={path}>{path}</li>)}</ul>}
+        </section>}
 
         <main className="flex min-h-0 flex-1">
           <div className="relative min-w-0 flex-1 overflow-auto">
@@ -625,8 +695,8 @@ export function App() {
               // panel docks to the right instead.
               selectedDetail={detailLayout === 'inline' ? detailPanel : null}
               onContextMenu={setContextMenu}
-              onCheckoutBranch={isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutBranch}
-              onCheckoutRemoteBranch={isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutRemoteBranch}
+              onCheckoutBranch={pendingAction !== null || actionRunning || operationState?.operation != null || isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutBranch}
+              onCheckoutRemoteBranch={pendingAction !== null || actionRunning || operationState?.operation != null || isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutRemoteBranch}
               localBranchNames={localBranchNames}
             />
           )}
@@ -648,7 +718,7 @@ export function App() {
             ) : (
               <IconCircleCheck size={15} className="shrink-0 text-[#7ee787]" aria-hidden />
             )}
-            <span className="min-w-0 flex-1 truncate font-mono">{notice.text}</span>
+            <span title={notice.text} className="min-w-0 flex-1 truncate font-mono">{notice.text}</span>
             <button
               type="button"
               className="inline-flex cursor-pointer rounded p-0.5 text-faint hover:bg-rowhover hover:text-fg"
@@ -685,11 +755,17 @@ export function App() {
           }}
           anchor={contextMenu.anchor}
           onClose={closeContextMenu}
-          onCheckout={isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : requestCheckout}
+          onCheckout={pendingAction !== null || actionRunning || operationState?.operation != null || isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : requestCheckout}
+          onRepositoryAction={pendingAction || actionRunning || isCheckingOut || syncRunning || autoPull.isRunning || !operationState || operationState.operation ? undefined : requestRepositoryAction}
           buildCommitHref={buildMenuCommitHref}
           buildCompareHref={buildCompareHref}
           onNotice={setNotice}
         />
+      )}
+      {selectedRepository !== null && pendingAction !== null && (
+        <RepositoryActionDialog key={selectedRepository + pendingAction.action.kind} repository={selectedRepository}
+          seed={pendingAction} state={operationState} onBusy={setActionRunning}
+          onCancel={() => setPendingAction(null)} onExecuted={completedRepositoryAction} />
       )}
       {pendingPull !== null && (
         <ConfirmActionDialog description={{

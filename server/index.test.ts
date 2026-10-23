@@ -539,3 +539,31 @@ test('fetch-all is protected by Host, Origin and action-header guards and preser
   expect((await post(headers, '../outside')).status).toBe(404)
   expect(headState()).toEqual(before)
 })
+
+test('reviewed Git actions require Host/Origin/header protection and a fresh preview token', async () => {
+  const post = (endpoint: string, extra: Record<string, string>, action: unknown, token?: string, repo = 'victim') => {
+    const body = JSON.stringify({ repo, action, ...(token ? { token } : {}) })
+    return sendRaw(`POST /api/git/${endpoint} HTTP/1.1\r\n` + headerLines({
+      Host: `127.0.0.1:${port}`, 'Content-Type': 'application/json', 'Content-Length': String(Buffer.byteLength(body)), Connection: 'close', ...extra,
+    }) + `\r\n${body}`)
+  }
+  const before = headState()
+  const action = { kind: 'create-branch', name: 'reviewed-test-branch', commit: git('rev-parse', 'HEAD'), checkout: false }
+  const headers = { 'X-Git-Graph-Action': '1', Origin: `http://127.0.0.1:${port}`, 'Sec-Fetch-Site': 'same-origin' }
+  for (const endpoint of ['action-preview', 'action']) {
+    const token = endpoint === 'action' ? 'fake-token' : undefined
+    expect((await post(endpoint, {}, action, token)).status).toBe(403)
+    expect((await post(endpoint, { ...headers, Origin: 'https://evil.example' }, action, token)).status).toBe(403)
+    expect((await post(endpoint, { ...headers, Host: 'evil.example' }, action, token)).status).toBe(421)
+    expect((await post(endpoint, { ...headers, 'Sec-Fetch-Site': 'cross-site' }, action, token)).status).toBe(403)
+    expect((await post(endpoint, headers, action, token, '../outside')).status).toBe(404)
+  }
+  const preview = await post('action-preview', headers, action)
+  expect(preview.status).toBe(200)
+  expect(git('for-each-ref', '--format=%(refname)', 'refs/heads/reviewed-test-branch')).toBe('')
+  expect((await post('action', headers, action, 'fake-token')).status).toBe(409)
+  const executed = await post('action', headers, action, JSON.parse(preview.body).token)
+  expect(executed.status).toBe(200); expect(JSON.parse(executed.body).state).toBe('completed')
+  expect(git('rev-parse', 'refs/heads/reviewed-test-branch')).toBe(action.commit)
+  expect(headState()).toEqual(before)
+})

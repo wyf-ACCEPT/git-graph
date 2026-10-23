@@ -7,6 +7,11 @@ import {
   IconGitCommit,
   IconGitCompare,
   IconTag,
+  IconGitMerge,
+  IconGitCherryPick,
+  IconTrash,
+  IconEdit,
+  IconUpload,
 } from '@tabler/icons-react'
 import type { CheckoutTarget, GitCommit } from '../../shared/git.schema'
 import {
@@ -45,6 +50,7 @@ export type GitActionMenuProps = {
    * Absent → every checkout entry is disabled with a reason.
    */
   onCheckout?: (target: CheckoutTarget) => void
+  onRepositoryAction?: (entry: GitMenuEntry) => void
   /** The `/commit` diff-tab URL for a commit. Absent or null → "Open commit" is disabled. */
   buildCommitHref?: (commit: GitCommit) => string | null
   /** The `/compare` URL for a branch against the default. Absent or null → "Compare" is disabled. */
@@ -56,6 +62,16 @@ export type GitActionMenuProps = {
 const ICON_SIZE = 15
 
 const ACTION_ICONS: Record<GitActionId, ReactNode> = {
+  'create-branch': <IconGitBranch size={ICON_SIZE} aria-hidden />,
+  'rename-branch': <IconEdit size={ICON_SIZE} aria-hidden />,
+  'delete-branch': <IconTrash size={ICON_SIZE} aria-hidden />,
+  'delete-remote-branch': <IconTrash size={ICON_SIZE} aria-hidden />,
+  'merge-branch': <IconGitMerge size={ICON_SIZE} aria-hidden />,
+  'cherry-pick': <IconGitCherryPick size={ICON_SIZE} aria-hidden />,
+  'create-tag': <IconTag size={ICON_SIZE} aria-hidden />,
+  'delete-tag': <IconTrash size={ICON_SIZE} aria-hidden />,
+  'push-tag': <IconUpload size={ICON_SIZE} aria-hidden />,
+  'delete-remote-tag': <IconTrash size={ICON_SIZE} aria-hidden />,
   'checkout-commit': <IconGitCommit size={ICON_SIZE} aria-hidden />,
   'copy-commit-hash': <IconCopy size={ICON_SIZE} aria-hidden />,
   'copy-short-hash': <IconCopy size={ICON_SIZE} aria-hidden />,
@@ -86,6 +102,7 @@ export function GitActionMenu({
   anchor,
   onClose,
   onCheckout,
+  onRepositoryAction,
   buildCommitHref,
   buildCompareHref,
   onNotice,
@@ -114,6 +131,9 @@ export function GitActionMenu({
       return { entry, disabledReason: null, href: null, run: () => onCheckout(checkoutTarget) }
     }
 
+    if (entry.mutates) return onRepositoryAction
+      ? { entry, disabledReason: null, href: null, run: () => onRepositoryAction(entry) }
+      : unavailable(notOfferedHere(entry))
     switch (entry.action) {
       case 'copy-commit-hash':
       case 'copy-short-hash': {
@@ -243,7 +263,7 @@ export function GitActionMenu({
       ref={menuRef}
       role="menu"
       aria-label={`git actions for ${input.focusedGroup ? input.focusedGroup.name : `commit ${commit.hash}`}`}
-      className="fixed z-50 min-w-60 max-w-sm rounded-md border border-line bg-raised py-1 font-sans text-[12.5px] text-fg shadow-xl shadow-black/40"
+      className="fixed max-h-[calc(100dvh-1rem)] overflow-y-auto z-50 min-w-60 max-w-sm rounded-md border border-line bg-raised py-1 font-sans text-[12.5px] text-fg shadow-xl shadow-black/40"
       style={{ left: position.x, top: position.y }}
       onKeyDown={handleKeyDown}
       onContextMenu={(event) => event.preventDefault()}

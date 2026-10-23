@@ -1,0 +1,18 @@
+{
+  "profile": "product-admin",
+  "locale": "en",
+  "sourceRoots": ["src"],
+  "canonicalMap": "UX-CONTRACT.md",
+  "ownership": { "Select/Listbox": "native" },
+  "requiredCapabilities": ["Select/Listbox", "Form", "Scrollbar", "Toast", "CRUD"],
+  "requiredCommands": ["unit", "typecheck", "build"],
+  "commands": {
+    "unit": "bun test",
+    "typecheck": "bun node_modules/typescript/bin/tsc --noEmit",
+    "build": "bun node_modules/vite/bin/vite.js build && NODE_ENV=production bun build server/index.ts server/cli.ts --outdir dist/server --target bun --sourcemap=linked --production"
+  },
+  "evidence": {
+    "crudFullFlow": "server/services/actions.test.ts",
+    "failurePaths": "src/components/RepositoryActionDialog.test.tsx"
+  }
+}

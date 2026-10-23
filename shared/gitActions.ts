@@ -14,6 +14,16 @@ import { classifyRefDecoration, refGroupLabel, type RefGroup } from './refGroup'
 // title.
 
 export type GitActionId =
+  | 'create-branch'
+  | 'rename-branch'
+  | 'delete-branch'
+  | 'delete-remote-branch'
+  | 'merge-branch'
+  | 'cherry-pick'
+  | 'create-tag'
+  | 'delete-tag'
+  | 'push-tag'
+  | 'delete-remote-tag'
   | 'checkout-commit'
   | 'copy-commit-hash'
   | 'copy-short-hash'
@@ -90,6 +100,8 @@ export type GitMenuInput = {
 const isDetachedHere = (head: HeadState, commit: GitCommit) =>
   head.branch === null && head.hash !== null && head.hash === commit.hash
 
+const mutation = (action: GitActionId, label: string, subject: string, unavailableReason: string | null = null): GitMenuEntry => ({ action, label, subject, unavailableReason, mutates: true })
+
 function commitSection({ commit, head }: GitMenuInput): GitMenuSection {
   const detachedHere = isDetachedHere(head, commit)
   return {
@@ -124,6 +136,9 @@ function commitSection({ commit, head }: GitMenuInput): GitMenuSection {
         unavailableReason: null,
         mutates: false,
       },
+      mutation('create-branch', 'Create branch here…', commit.fullHash || commit.hash),
+      mutation('create-tag', 'Create tag here…', commit.fullHash || commit.hash),
+      mutation('cherry-pick', 'Cherry-pick commit…', commit.fullHash || commit.hash, head.branch === null ? 'Check out a local branch first.' : null),
     ],
   }
 }
@@ -146,6 +161,9 @@ function refSection(group: RefGroup, input: GitMenuInput): GitMenuSection | null
             unavailableReason: isDetachedHere(head, commit) ? `HEAD is already detached at ${commit.hash}` : null,
             mutates: true,
           },
+          mutation('delete-tag', 'Delete local tag…', group.name),
+          mutation('push-tag', 'Push tag…', group.name),
+          mutation('delete-remote-tag', 'Delete remote tag…', group.name),
         ],
       }
     case 'remote': {
@@ -169,6 +187,8 @@ function refSection(group: RefGroup, input: GitMenuInput): GitMenuSection | null
             unavailableReason: `only local branches can be compared, and ${qualifiedName} has no local branch`,
             mutates: false,
           },
+          mutation('merge-branch', 'Merge into current branch…', `refs/remotes/${group.remotes[0]}/${group.name}`, head.branch === null ? 'Check out a local branch first.' : null),
+          mutation('delete-remote-branch', 'Delete remote branch…', `${group.remotes[0]}/${group.name}`, group.name === 'HEAD' ? 'A symbolic remote HEAD cannot be deleted here.' : null),
         ],
       }
     }
@@ -195,6 +215,10 @@ function refSection(group: RefGroup, input: GitMenuInput): GitMenuSection | null
                   : null,
             mutates: false,
           },
+          mutation('rename-branch', 'Rename local branch…', group.name),
+          mutation('delete-branch', 'Delete local branch…', group.name, head.branch === group.name ? 'Check out another branch before deleting this branch.' : null),
+          mutation('merge-branch', 'Merge into current branch…', `refs/heads/${group.name}`, head.branch === null ? 'Check out a local branch first.' : head.branch === group.name ? 'This is already the current branch.' : null),
+          ...group.remotes.map(remote => mutation('delete-remote-branch', `Delete ${remote}/${group.name}…`, `${remote}/${group.name}`)),
         ],
       }
   }

@@ -289,13 +289,13 @@ describe('CommitDetailPanel layout variant', () => {
   })
 
   test('headerActions render in the panel header alongside the close button', () => {
-    renderPanel({ headerActions: <button type="button">layout toggle</button> })
+    renderPanel({ headerActions: <button type="button" disabled>layout toggle</button> })
     expect(screen.getByRole('button', { name: 'layout toggle' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Close the details panel' })).toBeTruthy()
   })
 
   test('inline still surfaces headerActions and close in its floating corner cluster', () => {
-    renderPanel({ variant: 'inline', headerActions: <button type="button">layout toggle</button> })
+    renderPanel({ variant: 'inline', headerActions: <button type="button" disabled>layout toggle</button> })
     expect(screen.getByRole('button', { name: 'layout toggle' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Close the details panel' })).toBeTruthy()
   })

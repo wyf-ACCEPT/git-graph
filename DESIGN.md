@@ -17,3 +17,11 @@ Git outcomes. Existing checkout and origin-create flows remain the sibling
 reference. Keep pending, error, retry and cancel states in the same frame.
 Repository selection uses the existing native select; its OS popup is accepted.
 No new colors, fonts or layout system are introduced by branch sync.
+
+Repository actions extend the existing context menu and confirmation frame.
+Options use the established native select (OS popup accepted), labeled inputs
+and textareas; final review names both source and destination. Long menus and
+dialogs scroll within the viewport. Shared focus, pending and refusal states live
+in ConfirmActionDialog. Operation recovery stays visible above the graph.
+Scrollbar tokens in `src/index.css` derive from the runtime canvas/faint/dim/fg
+palette and apply to every scrollable app surface, including forced-colors mode.

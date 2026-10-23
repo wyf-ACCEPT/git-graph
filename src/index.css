@@ -10,3 +10,23 @@
    affordances (scrollbars, form controls) with light or dark. It deliberately
    lives there and not here: a host that imports the shared theme owns its own
    page's color-scheme. */
+
+/* Shared scrollbar baseline for graph, diff, menus and action dialogs. */
+:root {
+  --scrollbar-thumb: var(--color-faint);
+  --scrollbar-track: var(--color-canvas);
+  --scrollbar-hover: var(--color-dim);
+  --scrollbar-active: var(--color-fg);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+*::-webkit-scrollbar { width: 12px; height: 12px; }
+*::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+*::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border: 3px solid var(--scrollbar-track); border-radius: 6px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+*::-webkit-scrollbar-thumb:active { background: var(--scrollbar-active); }
+@media (forced-colors: active) {
+  * { scrollbar-color: auto; }
+}

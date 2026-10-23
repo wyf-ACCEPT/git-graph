@@ -1,4 +1,4 @@
-import { useEffect, useRef, type KeyboardEvent } from 'react'
+import { useEffect, useRef, type ReactNode, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { IconAlertTriangle, IconLoader2 } from '@tabler/icons-react'
 import type { GitActionDescription } from '../../shared/gitActions'
@@ -14,6 +14,9 @@ import type { GitActionDescription } from '../../shared/gitActions'
 export type ConfirmActionDialogProps = {
   /** What will run, against which repository, and what it will cost. */
   description: GitActionDescription
+  children?: ReactNode
+  retryLabel?: string
+  initialFocus?: 'confirm' | 'cancel' | 'field'
   /** True while the host is running the action; both buttons wait. */
   isRunning: boolean
   /** Why the last attempt failed — git's stderr for a refusal — or null. */
@@ -22,20 +25,38 @@ export type ConfirmActionDialogProps = {
   onCancel: () => void
 }
 
-export function ConfirmActionDialog({ description, isRunning, error, onConfirm, onCancel }: ConfirmActionDialogProps) {
+export function ConfirmActionDialog({ description, isRunning, error, onConfirm, onCancel, children, retryLabel = 'Try again', initialFocus = 'confirm' }: ConfirmActionDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const confirmRef = useRef<HTMLButtonElement>(null)
+  const cancelRef = useRef<HTMLButtonElement>(null)
 
   // Focus starts on the confirming button so the keyboard path from the menu is
   // Enter, then Enter; it returns to wherever it was (the row) when the dialog
   // goes away.
   useEffect(() => {
     const previouslyFocused = document.activeElement
-    confirmRef.current?.focus()
+    const root = document.getElementById('root')
+    const wasInert = root?.inert ?? false
+    if (root) root.inert = true
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const target = initialFocus === 'field' ? dialogRef.current?.querySelector<HTMLElement>('input:not([type="checkbox"]), textarea, select') : initialFocus === 'cancel' ? cancelRef.current : confirmRef.current
+    ;(target ?? confirmRef.current)?.focus()
     return () => {
+      if (root) root.inert = wasInert
+      document.body.style.overflow = overflow
       if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus()
     }
   }, [])
+
+  const previousLabel = useRef(description.confirmLabel)
+  useEffect(() => {
+    if (previousLabel.current !== description.confirmLabel) {
+      previousLabel.current = description.confirmLabel
+      if (initialFocus === 'cancel') cancelRef.current?.focus()
+      else confirmRef.current?.focus()
+    }
+  }, [description.confirmLabel, initialFocus])
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === 'Escape') {
@@ -45,8 +66,13 @@ export function ConfirmActionDialog({ description, isRunning, error, onConfirm, 
       return
     }
     // Keep Tab inside the dialog while it is modal.
+    if (event.key === 'Enter' && (event.target as HTMLElement).tagName === 'INPUT' && (event.target as HTMLInputElement).type !== 'checkbox') {
+      event.preventDefault()
+      if (!isRunning) onConfirm()
+      return
+    }
     if (event.key !== 'Tab') return
-    const focusable = [...(dialogRef.current?.querySelectorAll<HTMLElement>('button') ?? [])]
+    const focusable = [...(dialogRef.current?.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href]') ?? [])].filter(element => !element.hasAttribute('disabled'))
     const first = focusable[0]
     const last = focusable.at(-1)
     if (first === undefined || last === undefined) return
@@ -70,10 +96,11 @@ export function ConfirmActionDialog({ description, isRunning, error, onConfirm, 
       <div
         ref={dialogRef}
         role="alertdialog"
+        aria-busy={isRunning}
         aria-modal="true"
         aria-labelledby="git-action-dialog-title"
         aria-describedby="git-action-dialog-summary"
-        className="w-full max-w-lg rounded-lg border border-line bg-raised p-4 font-sans text-[13px] text-fg shadow-2xl shadow-black/60"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-lg border border-line bg-raised p-4 font-sans text-[13px] text-fg shadow-2xl shadow-black/60"
         onKeyDown={handleKeyDown}
       >
         <h2 id="git-action-dialog-title" className="text-[14px] font-semibold">
@@ -92,6 +119,7 @@ export function ConfirmActionDialog({ description, isRunning, error, onConfirm, 
             ))}
           </ul>
         )}
+        {children}
         {error !== null && (
           <div role="alert" className="mt-3">
             <p className="text-[12.5px] text-[#ff7b72]">git refused:</p>
@@ -102,6 +130,7 @@ export function ConfirmActionDialog({ description, isRunning, error, onConfirm, 
         )}
         <div className="mt-4 flex justify-end gap-2">
           <button
+            ref={cancelRef}
             type="button"
             className={`${buttonClass} border-line bg-canvas text-fg hover:bg-rowhover`}
             onClick={() => {
@@ -122,8 +151,8 @@ export function ConfirmActionDialog({ description, isRunning, error, onConfirm, 
             aria-disabled={isRunning ? 'true' : undefined}
             title={isRunning ? 'waiting for git to finish' : undefined}
           >
-            {isRunning && <IconLoader2 size={14} className="animate-spin" aria-hidden />}
-            {error !== null ? 'Try again' : description.confirmLabel}
+            <span className="inline-flex w-3.5 shrink-0" aria-hidden>{isRunning && <IconLoader2 size={14} className="animate-spin motion-reduce:animate-none" />}</span>
+            {error !== null ? retryLabel : description.confirmLabel}
           </button>
         </div>
       </div>

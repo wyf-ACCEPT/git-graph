@@ -397,3 +397,70 @@ describe('CommitGraph HEAD node glyph', () => {
     expect(nodes[1]!.getAttribute('r')).toBe('6')
   })
 })
+
+describe('connected uncommitted changes', () => {
+  const working = (overrides: Partial<import('../../shared/git.schema').WorkingTree> = {}): import('../../shared/git.schema').WorkingTree => ({
+    repository: 'demo', head: 'aaa1111', branch: 'main', filesTruncated: false,
+    files: [{ path: 'app.ts', previousPath: null, status: 'modified', additions: 1, deletions: 0, binary: false }], ...overrides,
+  })
+  const head = commit({ hash: 'aaa1111', subject: 'head commit', parents: ['bbb2222'], refs: ['HEAD -> main'] })
+  const root = commit({ hash: 'bbb2222', subject: 'root commit' })
+
+  test('draws a gray working node joined to HEAD without creating a fake commit row', () => {
+    const requests: CommitContextMenuRequest[] = []
+    const { container } = render(<CommitGraph commits={[head, root]} remotes={[]} workingTree={working()} workingHref="/working?repo=demo" onContextMenu={request => requests.push(request)} />)
+    const circle = container.querySelector('[data-working-tree-node]')!
+    expect(circle.getAttribute('cx')).toBe('16'); expect(circle.getAttribute('cy')).toBe('14')
+    expect(circle.getAttribute('stroke')).toBe('var(--color-dim)')
+    expect(container.querySelector('[data-working-tree-edge]')?.getAttribute('d')).toBe('M16,14 L16,42')
+    expect(container.querySelector('circle[r="6"]')?.getAttribute('cy')).toBe('42')
+    expect(screen.getByRole('link').getAttribute('href')).toBe('/working?repo=demo')
+    expect(screen.getAllByRole('button')).toHaveLength(2)
+    fireEvent.contextMenu(screen.getByRole('link')); expect(requests).toHaveLength(0)
+    expect(container.querySelectorAll('[data-working-tree-node]')).toHaveLength(1)
+  })
+  test('reserves the gray lane when another branch has commits above HEAD', () => {
+    const newer = commit({ hash: 'ccc3333', subject: 'other branch', parents: ['aaa1111'], refs: ['feature'] })
+    const { container } = render(<CommitGraph commits={[newer, head, root]} remotes={[]} workingTree={working()} workingHref="/working" />)
+    expect(container.querySelector('[data-working-tree-edge]')?.getAttribute('d')).toBe('M16,14 L16,70')
+    const realNodes = [...container.querySelectorAll('svg > circle:not([data-working-tree-node])')]
+    expect(realNodes[0]?.getAttribute('cx')).toBe('32')
+    expect(realNodes[1]?.getAttribute('cx')).toBe('16')
+    expect(container.querySelector('circle[r="6"]')?.getAttribute('cy')).toBe('70')
+  })
+  test('inline expansion above HEAD moves the connected edge with the actual rows', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get() { return this.textContent === 'INLINE_DETAIL_MARKER' ? 100 : 0 } })
+    try {
+      const newer = commit({ hash: 'ccc3333', parents: ['aaa1111'], subject: 'other branch' })
+      const { container } = render(<CommitGraph commits={[newer, head, root]} remotes={[]} workingTree={working()} workingHref="/working" selectedHash="ccc3333" selectedDetail={marker} />)
+      expect(container.querySelector('[data-working-tree-edge]')?.getAttribute('d')).toBe('M16,14 L16,170')
+      expect(container.querySelector('circle[r="6"]')?.getAttribute('cy')).toBe('170')
+    } finally {
+      if (descriptor) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', descriptor)
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetHeight
+    }
+  })
+  test('a clean tree has no synthetic node or connecting edge', () => {
+    const { container } = render(<CommitGraph commits={[head, root]} remotes={[]} workingTree={working({ files: [] })} />)
+    expect(container.querySelector('[data-working-tree-node]')).toBeNull()
+    expect(container.querySelector('[data-working-tree-edge]')).toBeNull()
+    expect(screen.getByText('Working tree clean')).toBeTruthy()
+  })
+  test('detached HEAD connects normally, while absent or stale HEAD never gets an invented edge', () => {
+    const detached = { ...head, refs: ['HEAD'] }
+    const view = render(<CommitGraph commits={[detached, root]} remotes={[]} workingTree={working({ branch: null })} workingHref="/working" />)
+    expect(view.container.querySelector('[data-working-tree-edge]')).toBeTruthy()
+    view.rerender(<CommitGraph commits={[detached, root]} remotes={[]} workingTree={working({ head: 'changed-head' })} workingHref="/working" />)
+    expect(view.container.querySelector('[data-working-tree-node]')).toBeTruthy()
+    expect(view.container.querySelector('[data-working-tree-edge]')).toBeNull()
+    view.rerender(<CommitGraph commits={[root]} remotes={[]} workingTree={working()} workingHref="/working" />)
+    expect(view.container.querySelector('[data-working-tree-edge]')).toBeNull()
+  })
+  test('an unborn repository has a standalone gray node and working diff link', () => {
+    const { container } = render(<CommitGraph commits={[]} remotes={[]} workingTree={working({ head: null })} workingHref="/working" />)
+    expect(container.querySelector('[data-working-tree-node]')).toBeTruthy()
+    expect(container.querySelector('[data-working-tree-edge]')).toBeNull()
+    expect(screen.getByRole('link')).toBeTruthy()
+  })
+})

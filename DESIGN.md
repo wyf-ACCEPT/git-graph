@@ -30,3 +30,12 @@ Commit menu order follows frequency: Create branch, Create tag, Checkout, Open
 commit, Cherry-pick, then Copy commit hash. Short-hash copying is not offered.
 Menu/action option labels use plain text without trailing ellipses, including
 actions that open a dialog; review and confirmation behavior stays explicit.
+
+Uncommitted changes are a gray synthetic node above the real history, connected
+to the actual visible HEAD by a solid gray segment. The working label remains
+a real diff link/handler row. A clean tree shows its existing check/label without
+a synthetic node. CommitGraph owns the connected SVG and row geometry; commit
+identities, context menus and counts still contain real commits only. When HEAD
+is below other branch tips, reserve its lane until it arrives rather than draw
+a working edge through unrelated nodes. Inline details move the connector with
+its destination. Missing/stale HEAD snapshots do not get an invented connection.

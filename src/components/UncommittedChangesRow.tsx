@@ -1,28 +1,11 @@
-import { IconCircleCheck, IconPencil } from '@tabler/icons-react'
+import { IconCircleCheck } from '@tabler/icons-react'
 import type { WorkingTree } from '../../shared/git.schema'
-import { GRAPH_NODE_COLUMN_X, ROW_HEIGHT } from './CommitGraph'
+import { GRAPH_NODE_COLUMN_X, ROW_HEIGHT } from './graphGeometry'
 import { FileLineStats } from './fileStatus'
 
-// The graph's "Uncommitted changes" node — a synthetic row above HEAD, the way
-// mhutchie's Git Graph and GitKraken mark the working tree at the top of
-// history. It is rendered outside CommitGraph so the pinned layout algorithm
-// never sees a non-commit. The leading glyph states which it is at a glance: a
-// pencil (matching the /working tab's own header) when there are edits to view,
-// a check when the tree is clean — never an ambiguous dashed ring that reads as
-// a spinner or as pending changes. ADR-0022: real icons, not hand-drawn markers.
-// The text is inset by `graphContentLeft(laneCount)` — the exact padding the
-// commit rows use — so it lines up with the commit subjects below, and the icon
-// sits in the graph gutter aligned to the node column. ADR-0031: adjacent to the
-// history it summarises. ADR-0025: when the tree is clean the control stays
-// visible and explains that there is nothing to open, rather than vanishing.
-//
-// It lives in the components barrel rather than in `App.tsx` because it is read
-// on **two** surfaces (ADR-0026 / ADR-0027 — the unit of sharing is the
-// invariant): the standalone graph shell here, and nightshift-ui's
-// `<GitGraphPanel>`, which mounts the same fetch-free render layer over a Vite
-// source-alias. It stayed app-local through its first three commits and so was
-// simply absent from the host — the whole feature was invisible in nightshift-ui
-// while looking present in this repo.
+// Shared working-tree label with the same diff-link/handler seams as before.
+// CommitGraph can render it alongside a connected synthetic SVG node. Standalone
+// hosts retain a matching gray marker; a clean tree retains the check icon.
 const MARKER_SIZE = 16
 const markerStyle = { left: GRAPH_NODE_COLUMN_X - MARKER_SIZE / 2 }
 
@@ -31,6 +14,8 @@ const ROW_CLASS = 'relative flex items-center gap-2 border-b border-line pr-4'
 export type UncommittedChangesRowProps = {
   /** The repository's uncommitted changes, as the working-tree route reports them. */
   working: WorkingTree
+  /** Hide the dirty marker when CommitGraph owns the connected SVG node. */
+  showMarker?: boolean
   /**
    * Left inset for the text, matching the commit rows' `graphContentLeft` for
    * the graph's current lane count.
@@ -53,6 +38,7 @@ export type UncommittedChangesRowProps = {
 
 export function UncommittedChangesRow({
   working,
+  showMarker = true,
   contentLeft,
   href = null,
   onOpen = null,
@@ -85,13 +71,11 @@ export function UncommittedChangesRow({
   const label = `view ${fileCount} uncommitted change${fileCount === 1 ? '' : 's'}`
   const body = (
     <>
-      <IconPencil
-        size={MARKER_SIZE}
-        className="absolute top-1/2 -translate-y-1/2 text-accent"
-        style={markerStyle}
-        aria-hidden
-      />
-      <span className="min-w-0 flex-1 truncate text-left text-[12px] text-accent">
+      {showMarker && <svg width={MARKER_SIZE} height={MARKER_SIZE} aria-hidden
+        className="absolute top-1/2 -translate-y-1/2" style={markerStyle}>
+        <circle cx={MARKER_SIZE / 2} cy={MARKER_SIZE / 2} r={5} fill="var(--color-canvas)" stroke="var(--color-dim)" strokeWidth={2} />
+      </svg>}
+      <span className="min-w-0 flex-1 truncate text-left text-[12px] font-medium text-accent">
         Uncommitted changes
         <span className="ml-2 text-faint">
           {fileCount} file{fileCount === 1 ? '' : 's'}

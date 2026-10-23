@@ -36,9 +36,8 @@ export type { CommitRefRowProps } from './RefPill'
 export { RefPill } from './RefPill'
 export type { RefPillProps } from './RefPill'
 
-// The working-tree node that sits above HEAD in the graph. Rendered *outside*
-// CommitGraph (the pinned layout algorithm never sees a non-commit), so a host
-// composes it directly above the graph and aligns it with `graphContentLeft`.
+// The standalone working-tree label. For a connected graph node, pass the
+// workingTree prop to CommitGraph; its layout input still contains only commits.
 export { UncommittedChangesRow } from './UncommittedChangesRow'
 export type { UncommittedChangesRowProps } from './UncommittedChangesRow'
 

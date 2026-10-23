@@ -111,8 +111,9 @@ or a file that cannot be read, is a fatal startup error.
 - A **commit detail panel** — full message, changed files, copy-hash, clickable
   parents — opening inline beneath the row by default, or docked as a sidebar.
   Each changed file expands to a whole-file-tokenized diff.
-- **Uncommitted changes** as a working-tree row above `HEAD`, tracked *and*
-  untracked, opening the same diff view.
+- **Uncommitted changes** as a gray graph node connected above `HEAD`, with a
+  working-tree row for tracked *and* untracked files opening the same diff view.
+  Clean working trees keep the status row without a pending node.
 - **Standalone diff tabs** for a single file, a whole commit, a branch (compared
   three-dot against the default branch), or the working tree.
 - A **context menu** on every commit row and ref pill — right-click, or

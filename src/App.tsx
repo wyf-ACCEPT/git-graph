@@ -645,12 +645,10 @@ export function App() {
 
         <main className="flex min-h-0 flex-1">
           <div className="relative min-w-0 flex-1 overflow-auto">
-          {/* The working tree sits at the top of history, above HEAD — ADR-0031:
-              adjacent to the graph it summarises. Shown once loaded whenever a
-              repository is selected, even before the log arrives or when the
-              repo has no commits yet (a fresh repo's untracked files still
-              count as uncommitted changes worth seeing). */}
-          {loadError === null && selectedRepository !== null && workingTree !== null && (
+          {/* While history is empty or loading, the standalone label still makes
+              untracked files reachable. Loaded graphs own their working row
+              and connected SVG node together. */}
+          {loadError === null && !hasCommits && selectedRepository !== null && workingTree !== null && (
             <UncommittedChangesRow
               working={workingTree}
               href={workingHref(selectedRepository)}
@@ -686,6 +684,8 @@ export function App() {
             <CommitGraph
               commits={commits}
               remotes={remotes}
+              workingTree={workingTree}
+              workingHref={selectedRepository === null ? null : workingHref(selectedRepository)}
               searchQuery={searchQuery.trim()}
               onStats={handleGraphStats}
               selectedHash={selectedCommitHash}

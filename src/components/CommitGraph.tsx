@@ -7,22 +7,22 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react'
-import type { GitCommit } from '../../shared/git.schema'
+import type { GitCommit, WorkingTree } from '../../shared/git.schema'
 import { computeGraphLayout } from '../../shared/graphLayout'
 import { findHeadState } from '../../shared/gitActions'
 import { fuzzyHighlight, type FuzzyHighlight } from '../../shared/fuzzy'
 import { groupRefDecorations, type RefGroup } from '../../shared/refGroup'
 import { CommitRefRow } from './RefPill'
 import { formatCommitDate } from '../lib/commitDate'
+import { UncommittedChangesRow } from './UncommittedChangesRow'
+import { ROW_HEIGHT, GRAPH_LANE_GAP, GRAPH_NODE_COLUMN_X, graphColumnWidth, graphContentLeft } from './graphGeometry'
+export { ROW_HEIGHT, GRAPH_NODE_COLUMN_X, graphColumnWidth, graphContentLeft } from './graphGeometry'
 
 // The reusable commit-graph view: commits in, SVG + rows out. It owns no data
 // fetching and no app chrome, so it can be lifted into another host
 // (nightshift-ui) as-is. Rendering geometry and behaviour are the parity port
 // of the mission-control-center prototype (git-graph/index.html @ 9f74265).
 
-export const ROW_HEIGHT = 28
-const LANE_GAP = 16
-const X_OFFSET = 16
 const NODE_RADIUS = 5
 const HEAD_NODE_RADIUS = 6
 
@@ -33,29 +33,8 @@ const HEAD_NODE_RADIUS = 6
 const LANE_COUNT = 10
 const laneColor = (laneIndex: number) => `var(--lane-${laneIndex % LANE_COUNT})`
 
-const laneX = (lane: number) => X_OFFSET + lane * LANE_GAP
+const laneX = (lane: number) => GRAPH_NODE_COLUMN_X + lane * GRAPH_LANE_GAP
 const baseRowY = (row: number) => row * ROW_HEIGHT + ROW_HEIGHT / 2
-
-// The gap between the graph column and a row's text content.
-const ROW_CONTENT_GAP = 8
-
-/** Total width of the graph column for a lane count — the SVG width and the gutter. */
-export function graphColumnWidth(laneCount: number): number {
-  return X_OFFSET * 2 + Math.max(0, laneCount - 1) * LANE_GAP
-}
-
-/**
- * Left offset where a row's text content (refs/subject) begins for a given lane
- * count — the exact padding the commit rows use. Exported so a host can align a
- * non-commit row (the working-tree node above HEAD) with the commit subjects
- * instead of guessing a fixed inset that drifts as lanes are added.
- */
-export function graphContentLeft(laneCount: number): number {
-  return graphColumnWidth(laneCount) + ROW_CONTENT_GAP
-}
-
-/** X of the node column (lane 0) — where a host aligns a leading marker with the graph's dots. */
-export const GRAPH_NODE_COLUMN_X = X_OFFSET
 
 // Curve from a child node down to a parent node. When lanes differ, complete
 // the horizontal shift inside the first row (a smooth elbow) then run straight
@@ -152,8 +131,13 @@ export type CommitGraphProps = {
   onCheckoutBranch?: (branchName: string) => void
   onCheckoutRemoteBranch?: (branchName: string) => void
   localBranchNames?: readonly string[]
+  /** Optional working-tree row and graph node; never inserted into commit data. */
+  workingTree?: WorkingTree | null
+  workingHref?: string | null
+  onOpenWorkingTree?: (() => void) | null
 }
 
+/** Real history plus an optional connected working-tree row above HEAD. */
 export function CommitGraph({
   commits,
   remotes,
@@ -166,9 +150,19 @@ export function CommitGraph({
   onCheckoutBranch,
   onCheckoutRemoteBranch,
   localBranchNames,
+  workingTree = null,
+  workingHref = null,
+  onOpenWorkingTree = null,
 }: CommitGraphProps) {
-  const layout = useMemo(() => computeGraphLayout(commits), [commits])
   const headHash = useMemo(() => findHeadState(commits, remotes).hash, [commits, remotes])
+  const headRow = headHash === null ? -1 : commits.findIndex(commit => commit.hash === headHash)
+  const dirty = (workingTree?.files.length ?? 0) > 0
+  const headCommit = headRow < 0 ? null : commits[headRow]!
+  // Do not connect a newer working snapshot to a stale or absent graph HEAD.
+  const connectWorkingTree = dirty && headCommit !== null && workingTree?.head != null &&
+    (headCommit.fullHash || headCommit.hash).startsWith(workingTree.head)
+  const layout = useMemo(() => computeGraphLayout(commits, { reserveLaneFor: connectWorkingTree ? headHash : null }), [commits, connectWorkingTree, headHash])
+  const workingOffset = workingTree === null ? 0 : ROW_HEIGHT
 
   const rows = useMemo(
     () =>
@@ -242,10 +236,10 @@ export function CommitGraph({
   }, [detailAfterRow])
 
   const rowY = (row: number) =>
-    baseRowY(row) + (detailAfterRow >= 0 && row > detailAfterRow ? detailHeight : 0)
+    workingOffset + baseRowY(row) + (detailAfterRow >= 0 && row > detailAfterRow ? detailHeight : 0)
 
   const graphWidth = graphColumnWidth(layout.laneCount)
-  const totalHeight = commits.length * ROW_HEIGHT + (detailAfterRow >= 0 ? detailHeight : 0)
+  const totalHeight = workingOffset + commits.length * ROW_HEIGHT + (detailAfterRow >= 0 ? detailHeight : 0)
 
   return (
     <div className="relative">
@@ -264,6 +258,11 @@ export function CommitGraph({
             strokeWidth={2}
           />
         ))}
+        {connectWorkingTree && <path data-working-tree-edge="true"
+          d={edgePath(0, ROW_HEIGHT / 2, layout.placements[headRow]!.lane, rowY(headRow))}
+          fill="none" stroke="var(--color-dim)" strokeWidth={2} strokeLinecap="round" />}
+        {dirty && <circle data-working-tree-node="true" cx={GRAPH_NODE_COLUMN_X} cy={ROW_HEIGHT / 2}
+          r={NODE_RADIUS} fill="var(--color-canvas)" stroke="var(--color-dim)" strokeWidth={2} />}
         {commits.map((commit, row) => {
           const lane = layout.placements[row]!.lane
           const isHead = commit.hash === headHash
@@ -281,6 +280,9 @@ export function CommitGraph({
         })}
       </svg>
 
+      {workingTree !== null && <UncommittedChangesRow working={workingTree}
+        contentLeft={graphContentLeft(layout.laneCount)} href={workingHref} onOpen={onOpenWorkingTree}
+        showMarker={!dirty} />}
       <div ref={rowsContainerRef} className="relative">
         {/* One wrapper per row keeps children[row] stable for scrollIntoView even
             when the inline detail is inserted after the selected row. */}

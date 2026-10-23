@@ -47,11 +47,14 @@ export type GraphLayout = {
   laneCount: number
 }
 
-export function computeGraphLayout(commits: readonly GraphCommitInput[]): GraphLayout {
+export function computeGraphLayout(commits: readonly GraphCommitInput[], options: { reserveLaneFor?: string | null } = {}): GraphLayout {
   const rowByHash = new Map<string, number>()
   commits.forEach((commit, row) => rowByHash.set(commit.hash, row))
 
-  const activeLanes: Array<string | null> = [] // activeLanes[lane] = awaited hash, or null when free
+  // A visible working tree is a child of HEAD outside the commit input. Keep
+  // its lane open until HEAD arrives, so unrelated branch tips cannot occupy it.
+  const activeLanes: Array<string | null> = options.reserveLaneFor && rowByHash.has(options.reserveLaneFor)
+    ? [options.reserveLaneFor] : [] // activeLanes[lane] = awaited hash, or null when free
   const placements = new Array<CommitPlacement>(commits.length)
   const links: GraphLink[] = []
   let laneCount = 0

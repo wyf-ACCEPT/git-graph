@@ -151,3 +151,23 @@ describe('computeGraphLayout — prototype regression fixture', () => {
     expect(layout.links).toHaveLength(19)
   })
 })
+
+describe('working-tree lane reservation', () => {
+  test('keeps a separate working-tree lane open until a lower HEAD row', () => {
+    const commits = [commit('feature', 'head'), commit('head', 'root'), commit('root')]
+    const layout = computeGraphLayout(commits, { reserveLaneFor: 'head' })
+    expect(layout.placements.map(placement => placement.lane)).toEqual([1, 0, 0])
+    expect(layout.links).toEqual([
+      { childRow: 0, childLane: 1, parentRow: 1, parentLane: 0 },
+      { childRow: 1, childLane: 0, parentRow: 2, parentLane: 0 },
+    ])
+    expect(layout.laneCount).toBe(2)
+    expect(layout.placements).toHaveLength(commits.length)
+  })
+  test('a topmost HEAD needs no extra lane and absent HEAD never reserves one', () => {
+    const commits = [commit('head', 'root'), commit('root')]
+    expect(computeGraphLayout(commits, { reserveLaneFor: 'head' })).toEqual(computeGraphLayout(commits))
+    expect(computeGraphLayout(commits, { reserveLaneFor: 'not-loaded' })).toEqual(computeGraphLayout(commits))
+    expect(computeGraphLayout([], { reserveLaneFor: 'head' })).toEqual({ placements: [], links: [], laneCount: 0 })
+  })
+})

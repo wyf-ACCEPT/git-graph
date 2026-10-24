@@ -169,7 +169,7 @@ describe('createGitService', () => {
     const service = createGitService({ repositories: createServedRootRepositorySet(scratchRoot) })
     const { rootPath, repositories } = await service.listRepositories()
     expect(rootPath).toBe(scratchRoot)
-    expect(repositories).toEqual([
+    expect([...repositories].sort((a, b) => a.name.localeCompare(b.name))).toEqual([
       { name: 'ambiguous-remote-repo', relativePath: 'ambiguous-remote-repo' },
       { name: 'dirty-repo', relativePath: 'dirty-repo' },
       { name: 'empty-repo', relativePath: 'empty-repo' },

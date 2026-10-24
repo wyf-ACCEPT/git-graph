@@ -42,12 +42,15 @@ its destination. Missing/stale HEAD snapshots do not get an invented connection.
 
 Each graph tab is bound to a workspace root in its URL. The header displays the
 full root path with truncation and a full-path tooltip, using existing dim/mono
-tokens. Repository options display relative paths so nested names are distinct.
+tokens. Repository options display relative paths.
 Diff and preview links retain the root; a mismatched server refuses the request
 in the existing error frame instead of silently showing another workspace.
 
 Legacy graph URLs without root automatically discover the current server root,
 add it to the URL and load repositories without a confirmation. A valid selected
-repo is preserved; otherwise prefer the root repo, then the first discovered
-child. An empty workspace shows its normal empty state. URLs already specifying
+repo is preserved; otherwise open the most recently changed repository. An empty workspace shows its normal empty state. URLs already specifying
 a different root retain their mismatch refusal.
+
+Repository discovery includes only the root and immediate child repositories.
+Sort newest activity first: HEAD commit date and non-ignored changed file mtimes.
+Fetch alone does not count as code activity. Alphabetical order only breaks ties.

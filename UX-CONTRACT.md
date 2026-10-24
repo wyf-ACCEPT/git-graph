@@ -47,6 +47,9 @@ allowlist. Existing legacy daemon commands keep their singleton semantics;
 
 Legacy graph URLs without root automatically discover the current server root,
 add it to the URL and load repositories without a confirmation. A valid selected
-repo is preserved; otherwise prefer the root repo, then the first discovered
-child. An empty workspace shows its normal empty state. URLs already specifying
+repo is preserved; otherwise open the most recently changed repository. An empty workspace shows its normal empty state. URLs already specifying
 a different root retain their mismatch refusal.
+
+Repository discovery includes only the root and immediate child repositories.
+Sort newest activity first: HEAD commit date and non-ignored changed file mtimes.
+Fetch alone does not count as code activity. Alphabetical order only breaks ties.

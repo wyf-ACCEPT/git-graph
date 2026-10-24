@@ -7,8 +7,8 @@ export function workspaceHref(path: string, search = typeof location === 'undefi
   return `${url.pathname}${url.search}${url.hash}`
 }
 
-/** Prefer a valid URL selection, then the root repo, then a discovered child. */
+/** Prefer a valid URL selection, then the most recently changed repository. */
 export function initialRepository(repositories: ReadonlyArray<{ relativePath: string }>, requested: string | null): string | null {
   if (requested !== null && repositories.some((repo) => repo.relativePath === requested)) return requested
-  return repositories.find((repo) => repo.relativePath === '')?.relativePath ?? repositories[0]?.relativePath ?? null
+  return repositories[0]?.relativePath ?? null
 }

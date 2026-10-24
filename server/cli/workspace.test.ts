@@ -21,7 +21,7 @@ test('workspace launchers isolate roots, reuse canonical paths, serialize starts
   const scratch = realpathSync(mkdtempSync(join(tmpdir(), 'gg-workspaces-test-')))
   const rootA = join(scratch, 'session A 中文')
   const rootB = join(scratch, 'session B')
-  for (const root of [rootA, rootB]) mkdirSync(join(root, 'group/repo/.git'), { recursive: true })
+  for (const root of [rootA, rootB]) mkdirSync(join(root, 'repo/.git'), { recursive: true })
   symlinkSync(rootA, join(scratch, 'alias'))
   const run = async (root: string, action = 'start', port = '') => {
     const process_ = Bun.spawn([process.execPath, join(import.meta.dir, '../cli.ts'), 'workspace', action, '', port], {
@@ -52,7 +52,7 @@ test('workspace launchers isolate roots, reuse canonical paths, serialize starts
       expect(response.status).toBe(200)
       const list = await response.json()
       expect(list.rootPath).toBe(url.searchParams.get('root'))
-      expect(list.repositories.map((r: { relativePath: string }) => r.relativePath)).toEqual(['group/repo'])
+      expect(list.repositories.map((r: { relativePath: string }) => r.relativePath)).toEqual(['repo'])
     }
     expect((await fetch(`${b.origin}/api/git/repos${a.search}`)).status).toBe(409)
     expect((await fetch(`${a.origin}/api/git/repos`)).status).toBe(409)

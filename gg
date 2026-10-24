@@ -18,7 +18,7 @@ Usage: gg [ROOT] [--repo NAME] [--port PORT]
        gg [ROOT] --status | --stop | --restart | --logs [N] | --help
 
 The default ROOT is the current Git repository, or the current directory when
-outside Git. gg discovers nested repositories and reuses one server per root.
+outside Git. gg lists the root and immediate child repositories and reuses one server per root.
 Different roots use independent ports. Explicit --port pins an exact port.
 The URL is copied to the clipboard. Ask the current Codex agent to open it in
 the current conversation's right panel.

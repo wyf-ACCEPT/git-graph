@@ -48,7 +48,7 @@ lock was not upgraded as part of the fork setup. Personal audit evidence and
 machine-specific records are kept outside the public source tree.
 
 The tracked `gg` launcher defaults to the caller's current Git root (or current
-directory outside Git), recursively discovers nested repositories, and starts or
+directory outside Git), lists root and immediate child repositories by recent activity, and starts or
 reuses an independent loopback server per canonical root. Workspace URLs carry
 the root assertion through graph/diff/preview navigation; stale tabs fail closed
 on another workspace's server. Ports auto-assign from 3107 unless explicitly

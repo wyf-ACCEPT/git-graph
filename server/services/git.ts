@@ -156,7 +156,7 @@ export function createGitService({ repositories: repositorySet, now, networkTime
    * re-validated against it, so arbitrary paths can never reach the shell.
    */
   async function resolveRepository(repositoryIdentifier: string): Promise<ServedRepository | undefined> {
-    const { repositories } = await repositorySet.list()
+    const { repositories } = await repositorySet.list({ sortByActivity: false })
     return repositories.find((candidate) => candidate.relativePath === repositoryIdentifier)
   }
 

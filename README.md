@@ -78,16 +78,13 @@ above. The launcher accepts `GIT_GRAPH_BUN` for an explicit Bun executable.
 ## Using it
 
 `bgg` serves the git repositories under a **served root**: the directory itself,
-if it is one, plus nested repositories, including worktrees with a `.git` file.
-Discovery does not follow directory symlinks or descend into `.git`, `.env`,
-`.codex`, `.claude`, `.cache`, `.runtime`, `.Trash`, `node_modules`, `.venv`,
-`venv`, `__pycache__`, `target`, package-manager caches (`.pnpm-store`, `.yarn`,
-`.npm`), generated framework/build caches (`.gradle`, `.build`, `.swiftpm`,
-`.next`, `.nuxt`, `.svelte-kit`), and Python tool caches (`.pytest_cache`,
-`.mypy_cache`, `.ruff_cache`, `.tox`). Named virtualenvs containing `pyvenv.cfg`
-are not traversed. Unreadable nested directories are skipped. Explicit ROOT can
-still select a repository inside an otherwise skipped directory. The root is the path you pass, or the
-current directory if you pass none.
+if it is one, plus immediate child repositories, including worktrees with a `.git`
+file. Deeper repositories are not listed. Symlink directories and dependency,
+metadata and cache directories are skipped. Sort order uses the latest HEAD
+commit date or non-ignored working-file modification time, newest first. Fetch
+alone does not move a repository to the top. The first repository opens by
+default; valid explicit repo links retain their selection. The root is the path
+you pass, or the current directory if you pass none.
 
 ```
 bgg [path]                                   serve, open a browser, stay in the foreground

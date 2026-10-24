@@ -31,9 +31,9 @@ test('opens a child immediately when a workspace has no root repository', () => 
   expect(initialRepository([], '')).toBeNull()
 })
 
-test('prefers the root repository unless the URL selects a valid child', () => {
+test('uses activity order by default while preserving explicit root or child selection', () => {
   const repos = [{ relativePath: 'child' }, { relativePath: '' }]
-  expect(initialRepository(repos, null)).toBe('')
+  expect(initialRepository(repos, null)).toBe('child')
   expect(initialRepository(repos, '')).toBe('')
   expect(initialRepository(repos, 'child')).toBe('child')
 })

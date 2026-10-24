@@ -81,7 +81,7 @@ describe('createServedRootRepositorySet', () => {
   test('throws at startup on a nonexistent root', () => {
     expect(() => createServedRootRepositorySet('/no/such/place')).toThrow('does not exist')
   })
-  test('finds nested and hidden worktrees, omits metadata/dependencies and never follows symlinks', async () => {
+  test('lists only the root and direct child worktrees, without following symlinks', async () => {
     const root = mkdtempSync(join(tmpdir(), 'graph-recursive-'))
     const outside = mkdtempSync(join(tmpdir(), 'graph-outside-'))
     try {
@@ -96,7 +96,7 @@ describe('createServedRootRepositorySet', () => {
       symlinkSync(outside, join(root, 'external'))
       symlinkSync(root, join(root, 'loop'))
       const paths = (await createServedRootRepositorySet(root).list()).repositories.map((repo) => repo.relativePath).sort()
-      expect(paths).toEqual(['', '.worktrees/feature', 'group/same', 'other/same', 'worktree'])
+      expect(paths).toEqual(['', 'worktree'])
       rmSync(join(root, 'group'), { recursive: true })
       expect((await createServedRootRepositorySet(root).list()).repositories.some((repo) => repo.relativePath === 'group/same')).toBe(false)
     } finally {

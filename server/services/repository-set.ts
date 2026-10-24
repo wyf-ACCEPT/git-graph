@@ -1,3 +1,4 @@
+import { repositoryActivity } from './repository-activity'
 import { existsSync, readFileSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import { basename, isAbsolute, join, relative, resolve } from 'node:path'
@@ -5,12 +6,12 @@ import type { RepositorySummary } from '../../shared/git.schema'
 
 // Which repositories this server serves — the membership every request's
 // repository identifier is re-validated against before anything reaches git.
-// Its own module (ADR-0032): it depends on the filesystem and the operator's
-// configuration, not on git, and would work unchanged if the git service were
-// deleted. The git service composes one of the two sets below.
+// Filesystem configuration determines membership. Git activity only orders the
+// root listing; it never widens the served set. The git service composes one of
+// the two sets below.
 //
 //   - The served root (`GIT_GRAPH_ROOT`, the default): the root itself when it
-//     is a repository plus its nested repositories. The identifier is the path
+//     is a repository plus its immediate child repositories. The identifier is the path
 //     relative to the root (`''` for the root itself).
 //   - A repositories file (`GIT_GRAPH_REPOSITORIES_FILE`): exactly the absolute
 //     paths the file names, one per line, wherever they live. This is how a
@@ -36,7 +37,7 @@ export type ServedRepositoryListing = {
 export type RepositorySet = {
   /** One line for the startup banner and `/api/status`: what is being served. */
   description: string
-  list(): Promise<ServedRepositoryListing>
+  list(options?: { sortByActivity?: boolean }): Promise<ServedRepositoryListing>
 }
 
 // A `.git` entry marks a repository — a directory for normal clones, a file
@@ -46,13 +47,13 @@ export const isGitRepository = (directoryPath: string) => existsSync(join(direct
 const byNameThenIdentifier = (first: ServedRepository, second: ServedRepository) =>
   first.name.localeCompare(second.name) || first.relativePath.localeCompare(second.relativePath)
 
-/** The served root: the root itself (if it is a repository) plus its nested repositories. */
+/** The served root: the root itself (if it is a repository) plus its immediate child repositories. */
 export function createServedRootRepositorySet(rootAbsolutePath: string): RepositorySet {
   const servedRoot = resolve(rootAbsolutePath)
   if (!existsSync(servedRoot)) {
     throw new Error(`git-graph root does not exist: ${servedRoot}`)
   }
-  const discover = async (): Promise<ServedRepositoryListing> => {
+  const discover = async (sortByActivity = true): Promise<ServedRepositoryListing> => {
     const repositories: ServedRepository[] = []
     // Do not follow directory symlinks or descend into Git metadata, secrets,
     // dependency trees and generated caches. Worktrees use a `.git` file.
@@ -77,11 +78,18 @@ export function createServedRootRepositorySet(rootAbsolutePath: string): Reposit
       // Named virtualenvs need not be called .venv; never traverse packages.
       if (entries.some((entry) => entry.name === 'pyvenv.cfg' && entry.isFile())) return
       for (const entry of entries) {
-        if (entry.isDirectory() && !skipped.has(entry.name)) pending.push(join(absolutePath, entry.name))
+        if (absolutePath === servedRoot && entry.isDirectory() && !skipped.has(entry.name)) pending.push(join(absolutePath, entry.name))
       }
     }
     while (pending.length) await Promise.all(pending.splice(0, 16).map(visit))
-    repositories.sort(byNameThenIdentifier)
+    if (!sortByActivity) return { rootPath: servedRoot, repositories }
+    const activity = new Map<string, number>()
+    for (let offset = 0; offset < repositories.length; offset += 8) {
+      await Promise.all(repositories.slice(offset, offset + 8).map(async (repo) => {
+        activity.set(repo.relativePath, await repositoryActivity(repo.absolutePath))
+      }))
+    }
+    repositories.sort((first, second) => activity.get(second.relativePath)! - activity.get(first.relativePath)! || byNameThenIdentifier(first, second))
     return { rootPath: servedRoot, repositories }
   }
   // Simultaneous graph/status requests share traversal, but the next lookup
@@ -89,7 +97,8 @@ export function createServedRootRepositorySet(rootAbsolutePath: string): Reposit
   let inFlight: Promise<ServedRepositoryListing> | null = null
   return {
     description: servedRoot,
-    list() {
+    list(options) {
+      if (options?.sortByActivity === false) return discover(false)
       inFlight ??= discover().finally(() => { inFlight = null })
       return inFlight
     },

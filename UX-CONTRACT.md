@@ -45,7 +45,8 @@ run gg in the intended directory. It never changes the server's filesystem
 allowlist. Existing legacy daemon commands keep their singleton semantics;
 `gg --status/--stop/--logs/--restart` address only the selected workspace.
 
-Legacy graph URLs without root offer a read-only discovery recovery panel. It
-names the current server directory and links to Open this workspace explicitly.
-No Git requests are admitted until the user follows the root-bound link. URLs
-that already name a different root retain their mismatch refusal.
+Legacy graph URLs without root automatically discover the current server root,
+add it to the URL and load repositories without a confirmation. A valid selected
+repo is preserved; otherwise prefer the root repo, then the first discovered
+child. An empty workspace shows its normal empty state. URLs already specifying
+a different root retain their mismatch refusal.

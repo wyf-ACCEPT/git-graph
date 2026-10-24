@@ -1,4 +1,4 @@
-import { workspaceRecoveryHref } from './lib/workspace'
+import { initialRepository } from './lib/workspace'
 import type { OperationState, ActionResult } from '../shared/repositoryActions'
 import type { GitMenuEntry } from '../shared/gitActions'
 import { RepositoryActionDialog, type ActionSeed } from './components/RepositoryActionDialog'
@@ -75,7 +75,6 @@ export function App() {
   const [workingTree, setWorkingTree] = useState<WorkingTree | null>(null)
   const [isLoadingLog, setIsLoadingLog] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [legacyWorkspace, setLegacyWorkspace] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [graphStats, setGraphStats] = useState<CommitGraphStats>({
     laneCount: 0,
@@ -135,7 +134,18 @@ export function App() {
   }, [])
 
   useEffect(() => {
-    fetchRepositories()
+    const loadRepositories = async () => {
+      if (!new URLSearchParams(location.search).has('root')) {
+        const root = await fetchServerWorkspace()
+        if (root !== null) {
+          const url = new URL(location.href)
+          url.searchParams.set('root', root)
+          history.replaceState(null, '', `${url.pathname}${url.search}`)
+        }
+      }
+      return fetchRepositories()
+    }
+    loadRepositories()
       .then((list) => {
         setRepositoryList(list)
         if (list.rootPath !== null) {
@@ -144,19 +154,9 @@ export function App() {
           history.replaceState(null, '', `${url.pathname}${url.search}`)
         }
         const requested = new URLSearchParams(location.search).get('repo')
-        const deepLinked =
-          requested !== null &&
-          list.repositories.find((repository) => repository.relativePath === requested)
-        const initial = deepLinked || list.repositories.find((repository) => repository.relativePath === '') || list.repositories[0]
-        setSelectedRepository(initial ? initial.relativePath : null)
+        setSelectedRepository(initialRepository(list.repositories, requested))
       })
-      .catch(async (error: Error) => {
-        setLoadError(error.message)
-        if (error instanceof GitRequestError && error.code === 'workspace_mismatch' && !new URLSearchParams(location.search).has('root')) {
-          // Show the directory before binding a legacy link to this server.
-          try { setLegacyWorkspace(await fetchServerWorkspace()) } catch { /* Keep the original actionable error. */ }
-        }
-      })
+      .catch((error: Error) => setLoadError(error.message))
   }, [])
 
   useEffect(() => {
@@ -675,19 +675,7 @@ export function App() {
             />
           )}
           {loadError !== null && (
-            <div role="alert" className="px-4 py-6">
-              {legacyWorkspace === null ? (
-                <p className="text-[#ff7b72]">{loadError}</p>
-              ) : (
-                <div className="space-y-3 text-dim">
-                  <p>This older link has no workspace directory. This port currently serves:</p>
-                  <p className="break-all font-mono text-fg">{legacyWorkspace}</p>
-                  <a className="inline-block rounded-md border border-line bg-raised px-3 py-1.5 text-fg hover:bg-rowhover focus-visible:outline-2 focus-visible:outline-accent"
-                    href={workspaceRecoveryHref(legacyWorkspace, location.search)}>Open this workspace</a>
-                  <p>If you intended another directory, run gg there and open its URL.</p>
-                </div>
-              )}
-            </div>
+            <p role="alert" className="px-4 py-6 text-[#ff7b72]">{loadError}</p>
           )}
           {loadError === null && repositoryList !== null && repositories.length === 0 && repositoryList.rootPath === null && (
             <p className="px-4 py-6 text-faint">

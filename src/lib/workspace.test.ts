@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { workspaceHref, workspaceRecoveryHref } from './workspace'
+import { workspaceHref, initialRepository } from './workspace'
 import { fileDiffHref, commitDiffHref, compareHref, workingHref } from './diffRoutes'
 import { filePreviewHref } from './filePreview'
 
@@ -22,12 +22,18 @@ test('all standalone views keep the originating workspace', () => {
   for (const href of links) expect(new URL(href, 'http://localhost').searchParams.get('root')).toBe(root)
 })
 
-test('legacy recovery explicitly binds the displayed root while preserving repo selection', () => {
-  const href = workspaceRecoveryHref('/workspace/中文 folder', '?repo=&extra=keep')
-  const url = new URL(href, 'http://localhost:3108')
-  expect(url.origin).toBe('http://localhost:3108')
-  expect(url.pathname).toBe('/')
-  expect(url.searchParams.get('root')).toBe('/workspace/中文 folder')
-  expect(url.searchParams.get('repo')).toBe('')
-  expect(url.searchParams.get('extra')).toBe('keep')
+test('opens a child immediately when a workspace has no root repository', () => {
+  const repos = [{ relativePath: 'group/first' }, { relativePath: 'other' }]
+  expect(initialRepository(repos, '')).toBe('group/first')
+  expect(initialRepository(repos, null)).toBe('group/first')
+  expect(initialRepository(repos, 'gone')).toBe('group/first')
+  expect(initialRepository(repos, 'other')).toBe('other')
+  expect(initialRepository([], '')).toBeNull()
+})
+
+test('prefers the root repository unless the URL selects a valid child', () => {
+  const repos = [{ relativePath: 'child' }, { relativePath: '' }]
+  expect(initialRepository(repos, null)).toBe('')
+  expect(initialRepository(repos, '')).toBe('')
+  expect(initialRepository(repos, 'child')).toBe('child')
 })

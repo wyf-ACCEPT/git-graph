@@ -7,9 +7,8 @@ export function workspaceHref(path: string, search = typeof location === 'undefi
   return `${url.pathname}${url.search}${url.hash}`
 }
 
-/** Explicit recovery always stays on this origin and preserves the old repo choice. */
-export function workspaceRecoveryHref(root: string, search: string): string {
-  const query = new URLSearchParams(search)
-  query.set('root', root)
-  return `/?${query}`
+/** Prefer a valid URL selection, then the root repo, then a discovered child. */
+export function initialRepository(repositories: ReadonlyArray<{ relativePath: string }>, requested: string | null): string | null {
+  if (requested !== null && repositories.some((repo) => repo.relativePath === requested)) return requested
+  return repositories.find((repo) => repo.relativePath === '')?.relativePath ?? repositories[0]?.relativePath ?? null
 }

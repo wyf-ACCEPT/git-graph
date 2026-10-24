@@ -1,0 +1,27 @@
+DESIGN.md
+  s_e1406b396038b6::t_328da0594869de 49-53
+UX-CONTRACT.md
+  s_e1406b396038b6::t_cabb139d943f6c 48-52
+src/App.tsx
+  s_e1406b396038b6::t_2484e8f49dfae5 1,137-148,157,159,678
+src/lib/workspace.test.ts
+  s_e1406b396038b6::t_fc2f266267e41e 2,25-38
+src/lib/workspace.ts
+  s_e1406b396038b6::t_94f98508b1fbbd 10-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9c054c198cbfb1b5187f2c158b08f6288905a718",
+  "prompts": {},
+  "sessions": {
+    "s_e1406b396038b6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16774-4a6c-7560-ad9c-4d4495a6a4f1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}

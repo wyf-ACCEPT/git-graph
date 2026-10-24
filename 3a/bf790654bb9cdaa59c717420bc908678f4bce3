@@ -1,0 +1,23 @@
+README.md
+  s_e1406b396038b6::t_5a5cd1e3ed21e9 83-89
+server/services/repository-set.test.ts
+  s_e1406b396038b6::t_bafbb6629dd54c 108-132
+server/services/repository-set.ts
+  s_e1406b396038b6::t_88bca23d8351f5 3,58-64,88-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3abf790654bb9cdaa59c717420bc908678f4bce3",
+  "prompts": {},
+  "sessions": {
+    "s_e1406b396038b6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16774-4a6c-7560-ad9c-4d4495a6a4f1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}

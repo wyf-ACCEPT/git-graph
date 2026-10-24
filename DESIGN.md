@@ -45,3 +45,8 @@ full root path with truncation and a full-path tooltip, using existing dim/mono
 tokens. Repository options display relative paths so nested names are distinct.
 Diff and preview links retain the root; a mismatched server refuses the request
 in the existing error frame instead of silently showing another workspace.
+
+Legacy graph URLs without root offer a read-only discovery recovery panel. It
+names the current server directory and links to Open this workspace explicitly.
+No Git requests are admitted until the user follows the root-bound link. URLs
+that already name a different root retain their mismatch refusal.

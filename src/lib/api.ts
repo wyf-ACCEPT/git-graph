@@ -1,3 +1,4 @@
+import { StatusResponseSchema } from '../../server/routes/discovery.schema'
 import { workspaceHref } from './workspace'
 import { ActionPreviewSchema, ActionResultSchema, OperationStateSchema, type RepositoryAction } from '../../shared/repositoryActions'
 import {
@@ -189,4 +190,9 @@ export async function executeRepositoryAction(repo: string, action: RepositoryAc
     method: 'POST', headers: { 'content-type': 'application/json', [MUTATION_REQUEST_HEADER]: MUTATION_REQUEST_HEADER_VALUE },
     body: JSON.stringify({ repo, action, token }),
   }))
+}
+
+/** Read-only discovery for repairing legacy URLs; never changes the served root. */
+export async function fetchServerWorkspace(): Promise<string | null> {
+  return StatusResponseSchema.parse(await requestJson('/api/status')).root
 }

@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { workspaceHref } from './workspace'
+import { workspaceHref, workspaceRecoveryHref } from './workspace'
 import { fileDiffHref, commitDiffHref, compareHref, workingHref } from './diffRoutes'
 import { filePreviewHref } from './filePreview'
 
@@ -20,4 +20,14 @@ test('all standalone views keep the originating workspace', () => {
   location.href = `http://localhost/?root=${encodeURIComponent(root)}`
   const links = [fileDiffHref('repo', 'abc', 'a.md'), commitDiffHref('repo', 'abc'), compareHref('repo', 'feature'), workingHref('repo'), filePreviewHref({ kind: 'working', repo: 'repo', path: 'a.md' })]
   for (const href of links) expect(new URL(href, 'http://localhost').searchParams.get('root')).toBe(root)
+})
+
+test('legacy recovery explicitly binds the displayed root while preserving repo selection', () => {
+  const href = workspaceRecoveryHref('/workspace/中文 folder', '?repo=&extra=keep')
+  const url = new URL(href, 'http://localhost:3108')
+  expect(url.origin).toBe('http://localhost:3108')
+  expect(url.pathname).toBe('/')
+  expect(url.searchParams.get('root')).toBe('/workspace/中文 folder')
+  expect(url.searchParams.get('repo')).toBe('')
+  expect(url.searchParams.get('extra')).toBe('keep')
 })

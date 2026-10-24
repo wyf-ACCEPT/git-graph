@@ -6,3 +6,10 @@ export function workspaceHref(path: string, search = typeof location === 'undefi
   url.searchParams.set('root', root)
   return `${url.pathname}${url.search}${url.hash}`
 }
+
+/** Explicit recovery always stays on this origin and preserves the old repo choice. */
+export function workspaceRecoveryHref(root: string, search: string): string {
+  const query = new URLSearchParams(search)
+  query.set('root', root)
+  return `/?${query}`
+}

@@ -1,0 +1,59 @@
+DESIGN.md
+  s_e1406b396038b6::t_9f300ff5ed35b3 42-47
+README.md
+  s_e1406b396038b6::t_8eebfd77f49dfb 54-71,81-89
+UX-CONTRACT.md
+  s_e1406b396038b6::t_814b6c0c60e288 39-46
+docs/6x16-fork-maintenance.md
+  s_e1406b396038b6::t_bc6a6e95f36109 50-55
+gg
+  s_e1406b396038b6::t_8bde31de9fd5ce 11,15,18,20-22,37,44,50-63
+server/cli.ts
+  s_e1406b396038b6::t_051f6c5b2f3760 296-304
+server/cli/daemon.ts
+  s_e1406b396038b6::t_8551ca6e8f81ca 143
+server/cli/paths.ts
+  s_e1406b396038b6::t_86ffb6f45a79bd 17,47-55,64
+server/cli/workspace.test.ts
+  s_e1406b396038b6::t_9a4f362d58e745 1-71
+server/cli/workspace.ts
+  s_e1406b396038b6::t_d2a8a71bb55e11 1-90
+server/config.ts
+  s_e1406b396038b6::t_10a53c11b80de3 21-22
+server/index.test.ts
+  s_e1406b396038b6::t_5131490f390fb9 570-587
+server/index.ts
+  s_e1406b396038b6::t_b29a3724b6eed4 59-72
+server/services/repository-set.test.ts
+  s_e1406b396038b6::t_bde563ec5da40d 2,84-107
+server/services/repository-set.ts
+  s_e1406b396038b6::t_4ab76d645f5e17 3,13,49,55-75,77-78,80,82-94
+src/App.tsx
+  s_e1406b396038b6::t_3e85c4e9206613 138-142,147,579-583,602
+src/lib/api.ts
+  s_e1406b396038b6::t_2f668965432b48 1,45
+src/lib/diffRoutes.ts
+  s_e1406b396038b6::t_dbd207e3af64bd 1,24,30,45,102
+src/lib/filePreview.ts
+  s_e1406b396038b6::t_8365ea80380116 1,21
+src/lib/workspace.test.ts
+  s_e1406b396038b6::t_c8c22de6b92ea9 1-23
+src/lib/workspace.ts
+  s_e1406b396038b6::t_4c71db053a2f31 1-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "91ec20a9ffa3f2d9241c286922f33bded49c4282",
+  "prompts": {},
+  "sessions": {
+    "s_e1406b396038b6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16774-4a6c-7560-ad9c-4d4495a6a4f1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}

@@ -56,6 +56,20 @@ const app = new Elysia({ nativeStaticResponse: false })
   // (none by default). After the Host guard, so a rebound name is refused first.
   // See routes/cors.ts.
   .use(corsPlugin({ allowedOrigins }))
+  // URL context is an assertion, never permission to scan another root.
+  // Run before route parsing/handlers so a stale tab cannot read or write a
+  // same-named repository after its old port has been reused.
+  .onRequest(({ request, set }) => {
+    const url = new URL(request.url)
+    if (!url.pathname.startsWith('/api/git/')) return
+    const expectedRoot = url.searchParams.get('root')
+    const rootRequired = Boolean(process.env.GIT_GRAPH_WORKSPACE_ROOT)
+    if (expectedRoot === null && !rootRequired) return
+    const actualRoot = config.GIT_GRAPH_REPOSITORIES_FILE === '' ? resolve(config.GIT_GRAPH_ROOT) : null
+    if (expectedRoot === actualRoot) return
+    set.status = 409
+    return { code: 'workspace_mismatch', error: `Workspace mismatch. This tab expects ${expectedRoot ?? 'a workspace URL'}; this server serves ${actualRoot ?? 'an explicit repository list'}. Run gg in the intended chat directory and open its URL.` }
+  })
   // ADR-0020: human docs at /api/docs, machine spec at /api/openapi.json.
   .use(
     openapi({

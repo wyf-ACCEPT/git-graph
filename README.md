@@ -51,10 +51,24 @@ github:wyf-ACCEPT/git-graph` puts `bgg` (and a spelled-out
 
 ## Local `gg` shortcut
 
-After building, `./gg [ROOT] [--repo NAME] [--port PORT]` starts the loopback daemon
-on port 3107 and prints/copies its URL. ROOT defaults to the current directory.
-Use `./gg --help`, `--status`, `--logs`, or `--stop` for management. Open the URL
-in a browser or the current Codex conversation's browser panel.
+After building, `./gg [ROOT] [--repo NAME] [--port PORT]` starts or reuses one
+loopback server per canonical workspace root and prints/copies its URL. The
+default is the current Git repository (including when invoked in a subdirectory),
+or the current directory outside Git. Pass ROOT to select an exact directory.
+Different roots get independent ports, starting at 3107; existing graphs keep
+serving their own roots. `--port` pins an exact port and fails if unavailable.
+
+Run `gg` from each Codex chat's working directory, then open the returned URL in
+that chat's right panel. A web page cannot infer a newly selected Codex chat's
+working directory. Its URL stays bound to its root, including diff/preview tabs;
+a server/root mismatch refuses Git requests instead of showing another repo.
+The graph header displays the root and the picker uses relative repository paths.
+
+`./gg [ROOT] --status`, `--logs [N]`, `--stop`, and `--restart` manage only that
+root. State, PID, log and launch lock live under
+`${XDG_RUNTIME_DIR:-/tmp}/git-graph-workspaces-<uid>/<root-hash>/`; `--status`
+prints the exact state path. `bgg daemon` retains its legacy singleton behavior
+and `/tmp/git-graph.state.json` (or XDG_RUNTIME_DIR equivalent).
 
 `./install.sh` can recreate a pinned local Bun runtime and build the application;
 it requires Node.js/npm and network access. Dependencies and runtime files are
@@ -64,7 +78,15 @@ above. The launcher accepts `GIT_GRAPH_BUN` for an explicit Bun executable.
 ## Using it
 
 `bgg` serves the git repositories under a **served root**: the directory itself,
-if it is one, plus its direct children. The root is the path you pass, or the
+if it is one, plus nested repositories, including worktrees with a `.git` file.
+Discovery does not follow directory symlinks or descend into `.git`, `.env`,
+`.codex`, `.claude`, `.cache`, `.runtime`, `.Trash`, `node_modules`, `.venv`,
+`venv`, `__pycache__`, `target`, package-manager caches (`.pnpm-store`, `.yarn`,
+`.npm`), generated framework/build caches (`.gradle`, `.build`, `.swiftpm`,
+`.next`, `.nuxt`, `.svelte-kit`), and Python tool caches (`.pytest_cache`,
+`.mypy_cache`, `.ruff_cache`, `.tox`). Named virtualenvs containing `pyvenv.cfg`
+are not traversed. Unreadable nested directories are skipped. Explicit ROOT can
+still select a repository inside an otherwise skipped directory. The root is the path you pass, or the
 current directory if you pass none.
 
 ```

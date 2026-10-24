@@ -18,8 +18,8 @@ const EnvironmentSchema = z.object({
   // services/bind-exposure.ts.
   HOST: z.string().default('127.0.0.1'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  // Directory scanned for git repositories (the root itself plus its direct
-  // children). Defaults to ~/Developer, the usual projects folder; set it (or
+  // Directory scanned for git repositories (the root itself plus nested
+  // repositories). Defaults to ~/Developer, the usual projects folder; set it (or
   // pass a positional CLI argument) to point somewhere else.
   GIT_GRAPH_ROOT: z.string().min(1).default(join(homedir(), 'Developer')),
   // A file naming exactly the repositories to serve, one absolute path per line

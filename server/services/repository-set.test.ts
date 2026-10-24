@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createListedRepositorySet, createServedRootRepositorySet, parseRepositoriesFile } from './repository-set'
@@ -81,4 +81,28 @@ describe('createServedRootRepositorySet', () => {
   test('throws at startup on a nonexistent root', () => {
     expect(() => createServedRootRepositorySet('/no/such/place')).toThrow('does not exist')
   })
+  test('finds nested and hidden worktrees, omits metadata/dependencies and never follows symlinks', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'graph-recursive-'))
+    const outside = mkdtempSync(join(tmpdir(), 'graph-outside-'))
+    try {
+      for (const path of ['', 'group/same', 'other/same', '.worktrees/feature', 'node_modules/package', '.pnpm-store/package', '.build/checkouts/dependency', '.git/private', '.env/secret']) {
+        mkdirSync(join(root, path, '.git'), { recursive: true })
+      }
+      mkdirSync(join(root, 'worktree'), { recursive: true })
+      writeFileSync(join(root, 'worktree/.git'), 'gitdir: elsewhere')
+      mkdirSync(join(root, 'custom-venv/nested/.git'), { recursive: true })
+      writeFileSync(join(root, 'custom-venv/pyvenv.cfg'), '')
+      mkdirSync(join(outside, '.git'))
+      symlinkSync(outside, join(root, 'external'))
+      symlinkSync(root, join(root, 'loop'))
+      const paths = (await createServedRootRepositorySet(root).list()).repositories.map((repo) => repo.relativePath).sort()
+      expect(paths).toEqual(['', '.worktrees/feature', 'group/same', 'other/same', 'worktree'])
+      rmSync(join(root, 'group'), { recursive: true })
+      expect((await createServedRootRepositorySet(root).list()).repositories.some((repo) => repo.relativePath === 'group/same')).toBe(false)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+      rmSync(outside, { recursive: true, force: true })
+    }
+  })
+
 })

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
-import { basename, isAbsolute, join, resolve } from 'node:path'
+import { basename, isAbsolute, join, relative, resolve } from 'node:path'
 import type { RepositorySummary } from '../../shared/git.schema'
 
 // Which repositories this server serves — the membership every request's
@@ -10,7 +10,7 @@ import type { RepositorySummary } from '../../shared/git.schema'
 // deleted. The git service composes one of the two sets below.
 //
 //   - The served root (`GIT_GRAPH_ROOT`, the default): the root itself when it
-//     is a repository plus its direct children. The identifier is the path
+//     is a repository plus its nested repositories. The identifier is the path
 //     relative to the root (`''` for the root itself).
 //   - A repositories file (`GIT_GRAPH_REPOSITORIES_FILE`): exactly the absolute
 //     paths the file names, one per line, wherever they live. This is how a
@@ -46,29 +46,52 @@ export const isGitRepository = (directoryPath: string) => existsSync(join(direct
 const byNameThenIdentifier = (first: ServedRepository, second: ServedRepository) =>
   first.name.localeCompare(second.name) || first.relativePath.localeCompare(second.relativePath)
 
-/** The served root: the root itself (if it is a repository) plus its direct children. */
+/** The served root: the root itself (if it is a repository) plus its nested repositories. */
 export function createServedRootRepositorySet(rootAbsolutePath: string): RepositorySet {
   const servedRoot = resolve(rootAbsolutePath)
   if (!existsSync(servedRoot)) {
     throw new Error(`git-graph root does not exist: ${servedRoot}`)
   }
+  const discover = async (): Promise<ServedRepositoryListing> => {
+    const repositories: ServedRepository[] = []
+    // Do not follow directory symlinks or descend into Git metadata, secrets,
+    // dependency trees and generated caches. Worktrees use a `.git` file.
+    const skipped = new Set([
+      '.git', '.env', '.codex', '.claude', '.cache', '.runtime', '.Trash',
+      'node_modules', '.venv', 'venv', '__pycache__', 'target',
+      '.pnpm-store', '.yarn', '.npm', '.gradle', '.build', '.swiftpm',
+      '.next', '.nuxt', '.svelte-kit', '.pytest_cache', '.mypy_cache', '.ruff_cache', '.tox',
+    ])
+    const pending = [servedRoot]
+    const visit = async (absolutePath: string): Promise<void> => {
+      let entries
+      try { entries = await readdir(absolutePath, { withFileTypes: true }) } catch (error) {
+        // An inaccessible nested directory is outside discovery; failure to
+        // read the explicitly selected root still fails visibly.
+        if (absolutePath === servedRoot || !['EACCES', 'EPERM', 'ENOENT'].includes((error as NodeJS.ErrnoException).code ?? '')) throw error
+        return
+      }
+      if (entries.some((entry) => entry.name === '.git' && (entry.isDirectory() || entry.isFile()))) {
+        repositories.push({ name: basename(absolutePath), relativePath: relative(servedRoot, absolutePath), absolutePath })
+      }
+      // Named virtualenvs need not be called .venv; never traverse packages.
+      if (entries.some((entry) => entry.name === 'pyvenv.cfg' && entry.isFile())) return
+      for (const entry of entries) {
+        if (entry.isDirectory() && !skipped.has(entry.name)) pending.push(join(absolutePath, entry.name))
+      }
+    }
+    while (pending.length) await Promise.all(pending.splice(0, 16).map(visit))
+    repositories.sort(byNameThenIdentifier)
+    return { rootPath: servedRoot, repositories }
+  }
+  // Simultaneous graph/status requests share traversal, but the next lookup
+  // scans again: removing a repository never leaves a persistent allowlist.
+  let inFlight: Promise<ServedRepositoryListing> | null = null
   return {
     description: servedRoot,
-    async list() {
-      const repositories: ServedRepository[] = []
-      if (isGitRepository(servedRoot)) {
-        repositories.push({ name: basename(servedRoot), relativePath: '', absolutePath: servedRoot })
-      }
-      const entries = await readdir(servedRoot, { withFileTypes: true })
-      for (const entry of entries) {
-        if (!entry.isDirectory() || entry.name.startsWith('.')) continue
-        const absolutePath = join(servedRoot, entry.name)
-        if (isGitRepository(absolutePath)) {
-          repositories.push({ name: entry.name, relativePath: entry.name, absolutePath })
-        }
-      }
-      repositories.sort(byNameThenIdentifier)
-      return { rootPath: servedRoot, repositories }
+    list() {
+      inFlight ??= discover().finally(() => { inFlight = null })
+      return inFlight
     },
   }
 }

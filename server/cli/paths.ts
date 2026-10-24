@@ -14,6 +14,7 @@
  * server without re-guessing its port.
  */
 import { realpathSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { homedir } from 'node:os'
 import { dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -43,9 +44,15 @@ export const serviceScriptPath = join(dirname(cliFilePath), `index${extname(cliF
 const runtimeDirectory = process.env.XDG_RUNTIME_DIR || '/tmp'
 const dataHome = process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share')
 
-export const pidFilePath = join(runtimeDirectory, `${DAEMON_NAME}.pid`)
-export const stateFilePath = join(runtimeDirectory, `${DAEMON_NAME}.state.json`)
-export const logDirectory = join(dataHome, DAEMON_NAME)
+export const workspaceRoot = process.env.GIT_GRAPH_WORKSPACE_ROOT ? realpathSync(process.env.GIT_GRAPH_WORKSPACE_ROOT) : null
+const workspaceDirectory = workspaceRoot
+  ? join(runtimeDirectory, `git-graph-workspaces-${process.getuid?.() ?? 'user'}`, createHash('sha256').update(workspaceRoot).digest('hex').slice(0, 24))
+  : null
+const stateDirectory = workspaceDirectory ?? runtimeDirectory
+
+export const pidFilePath = join(stateDirectory, `${DAEMON_NAME}.pid`)
+export const stateFilePath = join(stateDirectory, `${DAEMON_NAME}.state.json`)
+export const logDirectory = workspaceDirectory ?? join(dataHome, DAEMON_NAME)
 export const logFilePath = join(logDirectory, `${DAEMON_NAME}.log`)
 
 /**
@@ -54,7 +61,7 @@ export const logFilePath = join(logDirectory, `${DAEMON_NAME}.log`)
  * never read each other's file.
  */
 export function readyFilePathFor(uniqueSuffix: string | number): string {
-  return join(runtimeDirectory, `${DAEMON_NAME}.ready.${uniqueSuffix}`)
+  return join(stateDirectory, `${DAEMON_NAME}.ready.${uniqueSuffix}`)
 }
 
 // Identity fields, no defaults (ADR-0029): a corrupt or partial state file must

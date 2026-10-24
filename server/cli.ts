@@ -293,4 +293,12 @@ async function main(): Promise<void> {
   }
 }
 
-main()
+if (Bun.argv[2] === 'workspace') {
+  const { runWorkspace } = await import('./cli/workspace')
+  await runWorkspace(Bun.argv.slice(3)).catch((error) => {
+    console.error(`gg: ${error.message}`)
+    process.exitCode = 1
+  })
+} else {
+  main()
+}

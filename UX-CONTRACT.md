@@ -36,3 +36,11 @@ commit cherry-pick requires the user to choose its mainline parent.
 
 Source references: current user request; AGENTS.md UX conventions; shared action
 schemas; service validation; existing GitActionMenu and ConfirmActionDialog.
+
+`gg` starts or reuses an independent loopback server for each canonical root.
+Opening another root leaves existing tabs and servers intact. The URL's `root`
+assertion is retained by graph/diff/preview navigation and all API calls. A
+server mismatch fails before Git access, including writes, and asks the user to
+run gg in the intended directory. It never changes the server's filesystem
+allowlist. Existing legacy daemon commands keep their singleton semantics;
+`gg --status/--stop/--logs/--restart` address only the selected workspace.

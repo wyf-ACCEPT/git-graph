@@ -39,3 +39,9 @@ identities, context menus and counts still contain real commits only. When HEAD
 is below other branch tips, reserve its lane until it arrives rather than draw
 a working edge through unrelated nodes. Inline details move the connector with
 its destination. Missing/stale HEAD snapshots do not get an invented connection.
+
+Each graph tab is bound to a workspace root in its URL. The header displays the
+full root path with truncation and a full-path tooltip, using existing dim/mono
+tokens. Repository options display relative paths so nested names are distinct.
+Diff and preview links retain the root; a mismatched server refuses the request
+in the existing error frame instead of silently showing another workspace.

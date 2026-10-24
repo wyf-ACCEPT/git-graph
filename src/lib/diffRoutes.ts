@@ -1,3 +1,4 @@
+import { workspaceHref } from './workspace'
 // The standalone diff tabs live at their own routes so a change can be opened in
 // a new browser tab (cmd/ctrl/middle-click), the way VS Code's Git Graph opens a
 // diff in its own editor tab. One descriptor for every diff-view URL (ADR-0026):
@@ -20,13 +21,13 @@ export function fileDiffHref(
   filePath: string,
 ): string {
   const query = new URLSearchParams({ repo: repositoryRelativePath, hash: commitHash, path: filePath })
-  return `${FILE_DIFF_ROUTE}?${query}`
+  return workspaceHref(`${FILE_DIFF_ROUTE}?${query}`)
 }
 
 /** The URL of the full-commit view — metadata, file list, and every file's diff. */
 export function commitDiffHref(repositoryRelativePath: string, commitHash: string): string {
   const query = new URLSearchParams({ repo: repositoryRelativePath, hash: commitHash })
-  return `${COMMIT_DIFF_ROUTE}?${query}`
+  return workspaceHref(`${COMMIT_DIFF_ROUTE}?${query}`)
 }
 
 /**
@@ -41,7 +42,7 @@ export function compareHref(
 ): string {
   const query = new URLSearchParams({ repo: repositoryRelativePath, head: headBranch })
   if (baseBranch) query.set('base', baseBranch)
-  return `${COMPARE_ROUTE}?${query}`
+  return workspaceHref(`${COMPARE_ROUTE}?${query}`)
 }
 
 export type FileDiffRouteParams = {
@@ -98,7 +99,7 @@ export function parseCompareParams(search: string): CompareRouteParams | null {
 /** The URL of the working-tree tab — every uncommitted change and its diff. */
 export function workingHref(repositoryRelativePath: string): string {
   const query = new URLSearchParams({ repo: repositoryRelativePath })
-  return `${WORKING_ROUTE}?${query}`
+  return workspaceHref(`${WORKING_ROUTE}?${query}`)
 }
 
 export type WorkingRouteParams = {

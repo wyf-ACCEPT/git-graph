@@ -1,3 +1,4 @@
+import { workspaceHref } from './workspace'
 import type { FileDiff } from '../../shared/git.schema'
 
 export const FILE_PREVIEW_ROUTE = '/file'
@@ -17,7 +18,7 @@ export function filePreviewHref(target: FilePreviewTarget): string {
     query.set('head', target.head)
     if (target.base) query.set('base', target.base)
   }
-  return `${FILE_PREVIEW_ROUTE}?${query}`
+  return workspaceHref(`${FILE_PREVIEW_ROUTE}?${query}`)
 }
 
 export function parseFilePreviewParams(search: string): FilePreviewTarget | null {

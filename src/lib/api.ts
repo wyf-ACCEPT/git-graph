@@ -1,3 +1,4 @@
+import { workspaceHref } from './workspace'
 import { ActionPreviewSchema, ActionResultSchema, OperationStateSchema, type RepositoryAction } from '../../shared/repositoryActions'
 import {
   MUTATION_REQUEST_HEADER,
@@ -41,7 +42,7 @@ export async function pullRepository(repo: string, manual = false, options: { ex
 }
 
 async function requestJson(path: string, init?: RequestInit): Promise<unknown> {
-  const response = await fetch(path, init)
+  const response = await fetch(workspaceHref(path), init)
   if (!response.ok) {
     let message = `request failed with status ${response.status}`
     let code: string | undefined

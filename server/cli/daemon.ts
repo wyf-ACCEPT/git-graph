@@ -140,6 +140,7 @@ export function serverLaunchEnvironment(options: {
     HOST: options.host,
     PORT: String(options.explicitPort ?? options.basePort),
     GIT_GRAPH_ROOT: options.root,
+    ...(process.env.GIT_GRAPH_WORKSPACE_ROOT ? { GIT_GRAPH_REPOSITORIES_FILE: '', GIT_GRAPH_ALLOWED_ORIGINS: '', GIT_GRAPH_ALLOWED_HOSTS: '' } : {}),
     GIT_GRAPH_PORT_STRATEGY: options.explicitPort === undefined ? 'auto' : 'strict',
     GIT_GRAPH_READY_FILE: options.readyFilePath,
   }

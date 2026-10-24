@@ -567,3 +567,21 @@ test('reviewed Git actions require Host/Origin/header protection and a fresh pre
   expect(git('rev-parse', 'refs/heads/reviewed-test-branch')).toBe(action.commit)
   expect(headState()).toEqual(before)
 })
+
+
+test('a tab with another workspace root cannot list, read or mutate same-named repositories', async () => {
+  const before = headState()
+  const wrongRoot = encodeURIComponent(join(scratchRoot, 'other-session'))
+  for (const route of ['repos', 'log?repo=repo', 'branches?repo=repo']) {
+    const separator = route.includes('?') ? '&' : '?'
+    const response = await sendRawTo(port, `GET /api/git/${route}${separator}root=${wrongRoot} HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nConnection: close\r\n\r\n`)
+    expect(response.status).toBe(409)
+    expect(JSON.parse(response.body).code).toBe('workspace_mismatch')
+  }
+  const body = JSON.stringify({ repo: 'repo', target: { kind: 'branch', name: 'main' } })
+  const response = await sendRawTo(port, `POST /api/git/checkout?root=${wrongRoot} HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nOrigin: http://127.0.0.1:${port}\r\nX-Git-Graph-Action: 1\r\nContent-Type: application/json\r\nContent-Length: ${Buffer.byteLength(body)}\r\nConnection: close\r\n\r\n${body}`)
+  expect(response.status).toBe(409)
+  expect(headState()).toEqual(before)
+  const matching = await sendRawTo(port, `GET /api/git/repos?root=${encodeURIComponent(scratchRoot)} HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nConnection: close\r\n\r\n`)
+  expect(matching.status).toBe(200)
+})

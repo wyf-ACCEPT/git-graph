@@ -47,8 +47,12 @@ production build, and browser checks for the main interactions. The dependency
 lock was not upgraded as part of the fork setup. Personal audit evidence and
 machine-specific records are kept outside the public source tree.
 
-The tracked `gg` launcher defaults to the caller's current directory and strict
-loopback port 3107. It uses `GIT_GRAPH_BUN`, a pinned local runtime, a sibling
+The tracked `gg` launcher defaults to the caller's current Git root (or current
+directory outside Git), recursively discovers nested repositories, and starts or
+reuses an independent loopback server per canonical root. Workspace URLs carry
+the root assertion through graph/diff/preview navigation; stale tabs fail closed
+on another workspace's server. Ports auto-assign from 3107 unless explicitly
+pinned. State/PID/log/launch locks are root-scoped; see README.md. It uses `GIT_GRAPH_BUN`, a pinned local runtime, a sibling
 legacy runtime, or Bun on PATH. External command wrappers should execute this
 script. `install.sh` restores the pinned runtime and builds without relying on
 a separately installed bunx command.

@@ -135,11 +135,16 @@ export function App() {
     fetchRepositories()
       .then((list) => {
         setRepositoryList(list)
+        if (list.rootPath !== null) {
+          const url = new URL(location.href)
+          url.searchParams.set('root', list.rootPath)
+          history.replaceState(null, '', `${url.pathname}${url.search}`)
+        }
         const requested = new URLSearchParams(location.search).get('repo')
         const deepLinked =
           requested !== null &&
           list.repositories.find((repository) => repository.relativePath === requested)
-        const initial = deepLinked || list.repositories[0]
+        const initial = deepLinked || list.repositories.find((repository) => repository.relativePath === '') || list.repositories[0]
         setSelectedRepository(initial ? initial.relativePath : null)
       })
       .catch((error: Error) => setLoadError(error.message))
@@ -571,6 +576,11 @@ export function App() {
             </span>
           </div>
 
+          {repositoryList?.rootPath && (
+            <div className="min-w-0 max-w-full truncate text-xs text-dim" title={repositoryList.rootPath} aria-label="Workspace directory">
+              Workspace: <span className="font-mono">{repositoryList.rootPath}</span>
+            </div>
+          )}
           <div className="ml-auto flex flex-wrap items-center gap-2.5">
             <label className="flex items-center gap-1.5 text-dim">
               repository
@@ -589,7 +599,7 @@ export function App() {
                 {repositories.length === 0 && <option value="">no repositories found</option>}
                 {repositories.map((repository) => (
                   <option key={repository.relativePath} value={repository.relativePath}>
-                    {repository.name}
+                    {repository.relativePath || repository.name}
                   </option>
                 ))}
               </select>

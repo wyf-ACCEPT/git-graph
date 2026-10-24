@@ -1,6 +1,6 @@
 import { repositoryActivity } from './repository-activity'
 import { existsSync, readFileSync } from 'node:fs'
-import { readdir } from 'node:fs/promises'
+import { readdir, realpath } from 'node:fs/promises'
 import { basename, isAbsolute, join, relative, resolve } from 'node:path'
 import type { RepositorySummary } from '../../shared/git.schema'
 
@@ -55,6 +55,13 @@ export function createServedRootRepositorySet(rootAbsolutePath: string): Reposit
   }
   const discover = async (sortByActivity = true): Promise<ServedRepositoryListing> => {
     const repositories: ServedRepository[] = []
+    const linksFile = join(servedRoot, '.codex', 'git-graph-links.json')
+    const configuredLinks: unknown = existsSync(linksFile) ? JSON.parse(readFileSync(linksFile, 'utf8')) : []
+    if (!Array.isArray(configuredLinks) || !configuredLinks.every((name) => typeof name === 'string' && name !== '' && name !== '.' && name !== '..' && !/[\\/]/.test(name))) {
+      throw new Error(`Invalid repository links file: ${linksFile}. Expected an array of immediate child names.`)
+    }
+    const allowedLinks = new Set<string>(configuredLinks)
+    const linkedTargets = new Set([await realpath(servedRoot)])
     // Do not follow directory symlinks or descend into Git metadata, secrets,
     // dependency trees and generated caches. Worktrees use a `.git` file.
     const skipped = new Set([
@@ -78,7 +85,16 @@ export function createServedRootRepositorySet(rootAbsolutePath: string): Reposit
       // Named virtualenvs need not be called .venv; never traverse packages.
       if (entries.some((entry) => entry.name === 'pyvenv.cfg' && entry.isFile())) return
       for (const entry of entries) {
-        if (absolutePath === servedRoot && entry.isDirectory() && !skipped.has(entry.name)) pending.push(join(absolutePath, entry.name))
+        if (absolutePath !== servedRoot || skipped.has(entry.name)) continue
+        const childPath = join(absolutePath, entry.name)
+        if (entry.isDirectory()) pending.push(childPath)
+        if (entry.isSymbolicLink() && allowedLinks.has(entry.name)) {
+          const target = await realpath(childPath).catch(() => null)
+          if (target !== null && !linkedTargets.has(target) && isGitRepository(target)) {
+            linkedTargets.add(target)
+            repositories.push({ name: entry.name, relativePath: entry.name, absolutePath: target })
+          }
+        }
       }
     }
     while (pending.length) await Promise.all(pending.splice(0, 16).map(visit))

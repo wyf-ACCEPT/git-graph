@@ -105,4 +105,29 @@ describe('createServedRootRepositorySet', () => {
     }
   })
 
+  test('only explicitly configured immediate symlinks expose repositories, using canonical targets', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'graph-linked-root-'))
+    const outside = mkdtempSync(join(tmpdir(), 'graph-linked-target-'))
+    try {
+      mkdirSync(join(root, '.codex'))
+      mkdirSync(join(outside, '.git'))
+      symlinkSync(outside, join(root, 'allowed'))
+      symlinkSync(outside, join(root, 'unlisted'))
+      symlinkSync(root, join(root, 'loop'))
+      const file = join(root, '.codex/git-graph-links.json')
+      const set = createServedRootRepositorySet(root)
+      expect((await set.list({ sortByActivity: false })).repositories).toEqual([])
+      writeFileSync(file, JSON.stringify(['allowed', 'loop']))
+      const repos = (await set.list({ sortByActivity: false })).repositories
+      expect(repos).toEqual([{ name: 'allowed', relativePath: 'allowed', absolutePath: await import('node:fs/promises').then((fs) => fs.realpath(outside)) }])
+      writeFileSync(file, JSON.stringify(['../outside']))
+      await expect(set.list()).rejects.toThrow('Invalid repository links file')
+      rmSync(file)
+      expect((await set.list({ sortByActivity: false })).repositories).toEqual([])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+      rmSync(outside, { recursive: true, force: true })
+    }
+  })
+
 })

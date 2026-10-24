@@ -80,7 +80,13 @@ above. The launcher accepts `GIT_GRAPH_BUN` for an explicit Bun executable.
 `bgg` serves the git repositories under a **served root**: the directory itself,
 if it is one, plus immediate child repositories, including worktrees with a `.git`
 file. Deeper repositories are not listed. Symlink directories and dependency,
-metadata and cache directories are skipped. Sort order uses the latest HEAD
+metadata and cache directories are skipped. A user-managed `.codex/git-graph-links.json` may explicitly opt immediate
+symlinks into the list, for example `["6x-GitGraph"]`. Only those named links
+are followed, only when their target is itself a Git repository; deeper repos
+are not scanned. Git operations use the canonical target path. Removing a name
+revokes membership on the next lookup. Other symlinks remain excluded.
+
+Sort order uses the latest HEAD
 commit date or non-ignored working-file modification time, newest first. Fetch
 alone does not move a repository to the top. The first repository opens by
 default; valid explicit repo links retain their selection. The root is the path

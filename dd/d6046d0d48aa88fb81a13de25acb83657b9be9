@@ -1,0 +1,45 @@
+DESIGN.md
+  s_e1406b396038b6::t_1f8bd8ad2d5e8c 45,51,53-56
+README.md
+  s_e1406b396038b6::t_63a4e327c0aaf4 81-87
+UX-CONTRACT.md
+  s_e1406b396038b6::t_8d107078cc1df5 50,52-55
+docs/6x16-fork-maintenance.md
+  s_e1406b396038b6::t_0a1fec01b78b03 51
+gg
+  s_e1406b396038b6::t_69a46e42e794a4 21
+server/cli/workspace.test.ts
+  s_e1406b396038b6::t_35556432b2614a 24,55
+server/services/git.test.ts
+  s_e1406b396038b6::t_c67c10c3cbf297 172
+server/services/git.ts
+  s_e1406b396038b6::t_25e2f40501c8ee 159
+server/services/repository-activity.test.ts
+  s_e1406b396038b6::t_97ab64209aeae6 1-36
+server/services/repository-activity.ts
+  s_e1406b396038b6::t_d7271ccb5c9194 1-28
+server/services/repository-set.test.ts
+  s_e1406b396038b6::t_e3b633dcc43b50 84,99
+server/services/repository-set.ts
+  s_e1406b396038b6::t_606a791cacd095 1,9-11,14,40,50,56,81,85-92,100-101
+src/lib/workspace.test.ts
+  s_e1406b396038b6::t_573c970a92b727 34,36
+src/lib/workspace.ts
+  s_e1406b396038b6::t_83ecad97623de8 10,13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ddd6046d0d48aa88fb81a13de25acb83657b9be9",
+  "prompts": {},
+  "sessions": {
+    "s_e1406b396038b6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16774-4a6c-7560-ad9c-4d4495a6a4f1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+DESIGN.md
+  s_e1406b396038b6::t_d69acad7b18c0e 57-63
+UX-CONTRACT.md
+  s_e1406b396038b6::t_a6f392a5401b88 56-62
+src/App.tsx
+  s_e1406b396038b6::t_dc5a553a7ba20b 1,32,62-63,250,289-292,305,525,527-531,539,556-560,562-566,692,695,698-699,730-731,734,739
+src/components/CommitDetailPanel.tsx
+  s_e1406b396038b6::t_90df604db8e397 108,234-240,416
+src/components/CommitGraph.test.tsx
+  s_e1406b396038b6::t_5fa0e211c7e1dc 444-461
+src/components/CommitGraph.tsx
+  s_e1406b396038b6::t_472fb6e019707b 137-138,157-158,222-223,229,242,245,248,291-292
+src/components/UncommittedChangesRow.tsx
+  s_e1406b396038b6::t_8cf3dc56226fcd 19,43,99-100,102
+src/components/WorkingTreeDetailPanel.test.tsx
+  s_e1406b396038b6::t_6a5c2d9cc86804 1-36
+src/components/WorkingTreeDetailPanel.tsx
+  s_e1406b396038b6::t_dac0d3de9140a4 1-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fea3f9cd4b94828e40b0b53e4f6d6c0ff4a40897",
+  "prompts": {},
+  "sessions": {
+    "s_e1406b396038b6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16774-4a6c-7560-ad9c-4d4495a6a4f1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}

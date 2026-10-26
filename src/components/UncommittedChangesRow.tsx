@@ -16,6 +16,7 @@ export type UncommittedChangesRowProps = {
   working: WorkingTree
   /** Hide the dirty marker when CommitGraph owns the connected SVG node. */
   showMarker?: boolean
+  selected?: boolean
   /**
    * Left inset for the text, matching the commit rows' `graphContentLeft` for
    * the graph's current lane count.
@@ -39,6 +40,7 @@ export type UncommittedChangesRowProps = {
 export function UncommittedChangesRow({
   working,
   showMarker = true,
+  selected = false,
   contentLeft,
   href = null,
   onOpen = null,
@@ -94,9 +96,10 @@ export function UncommittedChangesRow({
       <button
         type="button"
         onClick={onOpen}
-        className={`${ROW_CLASS} w-full cursor-pointer bg-transparent hover:bg-rowhover`}
+        aria-expanded={selected}
+        className={`${ROW_CLASS} w-full cursor-pointer ${selected ? 'bg-rowselected' : 'bg-transparent'} hover:bg-rowhover`}
         style={{ height: ROW_HEIGHT, paddingLeft: contentLeft }}
-        title={`${label} in the diff view`}
+        title={`${label} in the details panel`}
       >
         {body}
       </button>

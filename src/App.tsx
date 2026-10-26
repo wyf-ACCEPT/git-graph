@@ -1,3 +1,4 @@
+import { WorkingTreeDetailPanel } from './components/WorkingTreeDetailPanel'
 import { initialRepository } from './lib/workspace'
 import type { OperationState, ActionResult } from '../shared/repositoryActions'
 import type { GitMenuEntry } from '../shared/gitActions'
@@ -28,6 +29,7 @@ import {
   fetchRepositories,
   fetchServerWorkspace,
   fetchWorkingTree,
+  fetchWorkingFileDiff,
 } from './lib/api'
 import { commitDiffHref, compareHref, fileDiffHref, workingHref } from './lib/diffRoutes'
 import { loadHighlighter } from './lib/highlighter'
@@ -56,6 +58,8 @@ import {
 const NOTICE_MILLISECONDS = 6000
 import { ThemeToggle } from './components/ThemeToggle'
 import { DetailLayoutToggle } from './components/DetailLayoutToggle'
+
+const WORKING_TREE_SELECTION = 'working-tree'
 
 export function App() {
   const { themeMode, setThemeMode, resolvedTheme } = useTheme()
@@ -243,7 +247,7 @@ export function App() {
 
   // Fetch the details of whatever commit is selected.
   useEffect(() => {
-    if (selectedRepository === null || selectedCommitHash === null) {
+    if (selectedRepository === null || selectedCommitHash === null || selectedCommitHash === WORKING_TREE_SELECTION) {
       setCommitDetail(null)
       setDetailError(null)
       return
@@ -282,7 +286,10 @@ export function App() {
     setIsLoadingFileDiff(true)
     setFileDiffError(null)
     setFileDiff(null)
-    fetchFileDiff(selectedRepository, selectedCommitHash, expandedFilePath)
+    const loadDiff = selectedCommitHash === WORKING_TREE_SELECTION
+      ? fetchWorkingFileDiff(selectedRepository, expandedFilePath)
+      : fetchFileDiff(selectedRepository, selectedCommitHash, expandedFilePath)
+    loadDiff
       .then((diff) => {
         if (!cancelled) setFileDiff(diff)
       })
@@ -295,7 +302,7 @@ export function App() {
     return () => {
       cancelled = true
     }
-  }, [selectedRepository, selectedCommitHash, expandedFilePath])
+  }, [selectedRepository, selectedCommitHash, expandedFilePath, repositoryVersion, workingTree])
 
   const handleToggleFile = useCallback(
     (filePath: string) => setExpandedFilePath((current) => (current === filePath ? null : filePath)),
@@ -515,8 +522,13 @@ export function App() {
       }
       if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
       const currentRow = commits.findIndex((commit) => commit.hash === selectedCommitHash)
-      if (currentRow < 0) return
+      if (currentRow < 0 && selectedCommitHash !== WORKING_TREE_SELECTION) return
       const nextRow = currentRow + (event.key === 'ArrowDown' ? 1 : -1)
+      if (nextRow === -1 && (workingTree?.files.length ?? 0) > 0) {
+        event.preventDefault()
+        setSelectedCommitHash(WORKING_TREE_SELECTION)
+        return
+      }
       const nextCommit = commits[nextRow]
       if (!nextCommit) return
       event.preventDefault()
@@ -524,7 +536,7 @@ export function App() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [commits, selectedCommitHash, isOverlayOpen])
+  }, [commits, selectedCommitHash, isOverlayOpen, workingTree])
 
   const readout = [
     hasCommits &&
@@ -541,8 +553,17 @@ export function App() {
   // the invariant). The layout toggle is an app-wide display preference (persisted
   // like the theme, settable before any commit is open), so it lives in the app's
   // top bar beside the theme toggle rather than on the panel's own header.
+  const workingSelected = selectedCommitHash === WORKING_TREE_SELECTION
+  const toggleWorkingTree = () => setSelectedCommitHash((current) => current === WORKING_TREE_SELECTION ? null : WORKING_TREE_SELECTION)
+  useEffect(() => {
+    if (workingSelected && workingTree !== null && workingTree.files.length === 0) setSelectedCommitHash(null)
+  }, [workingSelected, workingTree])
   const detailPanel =
-    selectedCommitHash === null ? null : (
+    workingSelected ? (workingTree !== null && selectedRepository !== null ? <WorkingTreeDetailPanel
+      working={workingTree} repository={selectedRepository} variant={detailLayout}
+      expandedFilePath={expandedFilePath} onToggleFile={handleToggleFile} fileDiff={fileDiff}
+      isLoadingFileDiff={isLoadingFileDiff} fileDiffError={fileDiffError} diffViewTheme={resolvedTheme}
+      onClose={() => setSelectedCommitHash(null)} /> : null) : selectedCommitHash === null ? null : (
       <CommitDetailPanel
         variant={detailLayout}
         detail={commitDetail}
@@ -668,11 +689,14 @@ export function App() {
               untracked files reachable. Loaded graphs own their working row
               and connected SVG node together. */}
           {loadError === null && !hasCommits && selectedRepository !== null && workingTree !== null && (
+            <>
             <UncommittedChangesRow
               working={workingTree}
-              href={workingHref(selectedRepository)}
+              href={workingHref(selectedRepository)} onOpen={toggleWorkingTree} selected={workingSelected}
               contentLeft={graphContentLeft(graphStats.laneCount)}
             />
+            {detailLayout === 'inline' && workingSelected && detailPanel}
+            </>
           )}
           {loadError !== null && (
             <p role="alert" className="px-4 py-6 text-[#ff7b72]">{loadError}</p>
@@ -703,14 +727,16 @@ export function App() {
               remotes={remotes}
               workingTree={workingTree}
               workingHref={selectedRepository === null ? null : workingHref(selectedRepository)}
+              onOpenWorkingTree={toggleWorkingTree} workingSelected={workingSelected}
+              workingDetail={detailLayout === 'inline' && workingSelected ? detailPanel : null}
               searchQuery={searchQuery.trim()}
               onStats={handleGraphStats}
-              selectedHash={selectedCommitHash}
+              selectedHash={workingSelected ? null : selectedCommitHash}
               onSelectCommit={handleSelectCommit}
               // Inline is the default: the detail expands in-flow beneath the
               // selected row. In sidebar mode the graph stays unbroken and the
               // panel docks to the right instead.
-              selectedDetail={detailLayout === 'inline' ? detailPanel : null}
+              selectedDetail={detailLayout === 'inline' && !workingSelected ? detailPanel : null}
               onContextMenu={setContextMenu}
               onCheckoutBranch={pendingAction !== null || actionRunning || operationState?.operation != null || isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutBranch}
               onCheckoutRemoteBranch={pendingAction !== null || actionRunning || operationState?.operation != null || isCheckingOut || syncRunning || pendingPull !== null || autoPull.isRunning ? undefined : checkoutRemoteBranch}

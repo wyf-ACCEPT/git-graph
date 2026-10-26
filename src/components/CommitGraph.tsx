@@ -134,6 +134,8 @@ export type CommitGraphProps = {
   /** Optional working-tree row and graph node; never inserted into commit data. */
   workingTree?: WorkingTree | null
   workingHref?: string | null
+  workingDetail?: ReactNode
+  workingSelected?: boolean
   onOpenWorkingTree?: (() => void) | null
 }
 
@@ -152,6 +154,8 @@ export function CommitGraph({
   localBranchNames,
   workingTree = null,
   workingHref = null,
+  workingDetail = null,
+  workingSelected = false,
   onOpenWorkingTree = null,
 }: CommitGraphProps) {
   const headHash = useMemo(() => findHeadState(commits, remotes).hash, [commits, remotes])
@@ -215,12 +219,14 @@ export function CommitGraph({
   // height. Everything below this row is pushed down by the DOM automatically;
   // the absolutely-positioned SVG is a separate layer, so it re-derives the same
   // offset from the measured height to keep nodes and edges aligned with rows.
+  const workingDetailOpen = dirty && workingDetail !== null
+  const hasInlineDetail = workingDetailOpen || (selectedDetail !== null && selectedRow >= 0)
   const detailAfterRow = selectedDetail !== null && selectedRow >= 0 ? selectedRow : -1
   const detailRef = useRef<HTMLDivElement>(null)
   const [detailHeight, setDetailHeight] = useState(0)
   useLayoutEffect(() => {
     const node = detailRef.current
-    if (detailAfterRow < 0 || node === null) {
+    if (!hasInlineDetail || node === null) {
       setDetailHeight(0)
       return
     }
@@ -233,13 +239,13 @@ export function CommitGraph({
     const observer = new ResizeObserver(measure)
     observer.observe(node)
     return () => observer.disconnect()
-  }, [detailAfterRow])
+  }, [detailAfterRow, workingDetailOpen, hasInlineDetail])
 
   const rowY = (row: number) =>
-    workingOffset + baseRowY(row) + (detailAfterRow >= 0 && row > detailAfterRow ? detailHeight : 0)
+    workingOffset + baseRowY(row) + (workingDetailOpen || (detailAfterRow >= 0 && row > detailAfterRow) ? detailHeight : 0)
 
   const graphWidth = graphColumnWidth(layout.laneCount)
-  const totalHeight = workingOffset + commits.length * ROW_HEIGHT + (detailAfterRow >= 0 ? detailHeight : 0)
+  const totalHeight = workingOffset + commits.length * ROW_HEIGHT + (hasInlineDetail ? detailHeight : 0)
 
   return (
     <div className="relative">
@@ -282,7 +288,8 @@ export function CommitGraph({
 
       {workingTree !== null && <UncommittedChangesRow working={workingTree}
         contentLeft={graphContentLeft(layout.laneCount)} href={workingHref} onOpen={onOpenWorkingTree}
-        showMarker={!dirty} />}
+        showMarker={!dirty} selected={workingSelected} />}
+      {workingDetailOpen && <div ref={detailRef} style={{ paddingLeft: graphWidth }}>{workingDetail}</div>}
       <div ref={rowsContainerRef} className="relative">
         {/* One wrapper per row keeps children[row] stable for scrollIntoView even
             when the inline detail is inserted after the selected row. */}

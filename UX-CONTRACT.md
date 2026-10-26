@@ -53,3 +53,10 @@ a different root retain their mismatch refusal.
 Repository discovery includes only the root and immediate child repositories.
 Sort newest activity first: HEAD commit date and non-ignored changed file mtimes.
 Fetch alone does not count as code activity. Alphabetical order only breaks ties.
+
+Uncommitted changes use the same selection, toggle, Escape, inline/sidebar
+preference and file disclosure behavior as commit details. FileChangeRow and
+shared detail panel geometry are canonical for both. Plain click opens the
+brief in the current page; separate external-link controls open full working
+or file diffs/previews. The working inline panel shifts every real graph node
+and edge by its measured height. No synthetic commit metadata is fabricated.

@@ -105,7 +105,7 @@ type FileChangeRowProps = {
  * external-link control — open it in a new tab, the way VS Code's Git Graph
  * opens a file diff in its own editor tab.
  */
-function FileChangeRow({
+export function FileChangeRow({
   file,
   isExpanded,
   onToggle,
@@ -229,6 +229,13 @@ function FileChangeRow({
       )}
     </li>
   )
+}
+
+/** Shared geometry for committed and uncommitted detail surfaces. */
+export function detailPanelClass(variant: 'inline' | 'sidebar', expanded: boolean): string {
+  return variant === 'inline'
+    ? 'relative flex max-h-[65vh] flex-col overflow-hidden border-y border-line bg-raised'
+    : `flex shrink-0 flex-col overflow-hidden border-l border-line bg-raised transition-[width] duration-150 ${expanded ? 'w-[44rem] max-w-[55vw]' : 'w-[26rem]'}`
 }
 
 export type CommitDetailPanelProps = {
@@ -406,13 +413,7 @@ export function CommitDetailPanel({
       // to show a commit subject. Inline: a full-width block in the row flow, its
       // height capped so a large commit scrolls in place rather than pushing the
       // rows below off-screen. Positioned so the inline controls anchor to it.
-      className={
-        isInline
-          ? 'relative flex max-h-[65vh] flex-col overflow-hidden border-y border-line bg-raised'
-          : `flex shrink-0 flex-col overflow-hidden border-l border-line bg-raised transition-[width] duration-150 ${
-              expandedFilePath !== null ? 'w-[44rem] max-w-[55vw]' : 'w-[26rem]'
-            }`
-      }
+      className={detailPanelClass(variant, expandedFilePath !== null)}
       aria-label="Commit details"
     >
       {/* Inline sits directly beneath its commit row, which already shows the

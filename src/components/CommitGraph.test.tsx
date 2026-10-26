@@ -441,6 +441,24 @@ describe('connected uncommitted changes', () => {
       else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetHeight
     }
   })
+  test('working details expand before real history and keep HEAD and its edge aligned', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get() { return this.textContent === 'WORKING_BRIEF' ? 100 : 0 } })
+    try {
+      let opened = false
+      const { container } = render(<CommitGraph commits={[head, root]} remotes={[]} workingTree={working()} workingSelected onOpenWorkingTree={() => { opened = true }} workingDetail={<div>WORKING_BRIEF</div>} />)
+      const row = screen.getByRole('button', { name: /Uncommitted changes/ })
+      expect(row.getAttribute('aria-expanded')).toBe('true')
+      fireEvent.click(row)
+      expect(opened).toBe(true)
+      expect(container.querySelector('[data-working-tree-edge]')?.getAttribute('d')).toBe('M16,14 L16,142')
+      expect(container.querySelector('circle[r="6"]')?.getAttribute('cy')).toBe('142')
+      expect(screen.getByText('WORKING_BRIEF')).toBeTruthy()
+    } finally {
+      if (descriptor) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', descriptor)
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetHeight
+    }
+  })
   test('a clean tree has no synthetic node or connecting edge', () => {
     const { container } = render(<CommitGraph commits={[head, root]} remotes={[]} workingTree={working({ files: [] })} />)
     expect(container.querySelector('[data-working-tree-node]')).toBeNull()

@@ -329,6 +329,7 @@ export type CommitDetailPanelProps = {
    * block the graph shell renders in-flow beneath the selected commit row.
    */
   variant?: 'sidebar' | 'inline'
+  laneColor?: string | null
   /**
    * Optional host seam: extra controls rendered in the panel's control cluster,
    * before the close button (sidebar: in the titled header; inline: the floating
@@ -365,6 +366,7 @@ export function CommitDetailPanel({
   onOpenCommitDiff,
   onOpenCompare,
   variant = 'sidebar',
+  laneColor,
   headerActions,
 }: CommitDetailPanelProps) {
   const isInline = variant === 'inline'
@@ -533,7 +535,7 @@ export function CommitDetailPanel({
                           key={`${refGroup.kind}:${refGroup.name}`}
                           className="inline-flex items-center gap-0.5"
                         >
-                          <RefPill group={refGroup} onCheckoutBranch={onCheckoutBranch}
+                          <RefPill group={refGroup} laneColor={laneColor} onCheckoutBranch={onCheckoutBranch}
                             onCheckoutRemoteBranch={onCheckoutRemoteBranch} localBranchNames={localBranchNames} />
                           {/* Copy a ref that resolves: `main` for a branch (with
                               or without remotes), `origin/feature` for one that

@@ -1,4 +1,4 @@
-import { Fragment, type MouseEvent, type ReactNode } from 'react'
+import { Fragment, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import { refGroupLabel, refGroupTitle, type RefGroup } from '../../shared/refGroup'
 import { canCreateOriginBranch } from '../../shared/gitActions'
 
@@ -30,6 +30,8 @@ export type RefPillProps = {
   /** One grouped ref — build these with `groupRefDecorations(commit.refs, remotes)`. */
   group: RefGroup
   children?: ReactNode
+  /** Actual graph lane color; semantic colors remain the fallback for other hosts. */
+  laneColor?: string | null
   /** Pointer shortcut; keyboard users retain the row/context-menu checkout action. */
   onCheckoutBranch?: (branchName: string) => void
   onCheckoutRemoteBranch?: (branchName: string) => void
@@ -60,7 +62,7 @@ export type RefPillProps = {
  * agreement with anything — it is simply that remote's branch, so it keeps the
  * qualified name git printed (`origin/feature`) and gains no segments.
  */
-export function RefPill({ group, children, onContextMenu, onCheckoutBranch, onCheckoutRemoteBranch, localBranchNames }: RefPillProps) {
+export function RefPill({ group, children, laneColor, onContextMenu, onCheckoutBranch, onCheckoutRemoteBranch, localBranchNames }: RefPillProps) {
   const { text, markerRemotes } = refGroupLabel(group)
   // A checked-out branch reads as HEAD, the way it did before its remotes were
   // folded in — the marker is additive, it never replaces the kind.
@@ -77,6 +79,8 @@ export function RefPill({ group, children, onContextMenu, onCheckoutBranch, onCh
   if (canDoubleClick) className.push('cursor-pointer')
   if (isSegmented) className.push('ref-segmented')
   if (isCheckedOut) className.push('ref-checked-out')
+  const usesLaneColor = Boolean(laneColor) && (group.kind === 'branch' || group.isHead)
+  if (usesLaneColor) className.push('ref-lane')
 
   // A segmented pill moves its padding onto the segments, so host-supplied
   // trailing content becomes a segment of its own rather than sitting flush
@@ -86,6 +90,7 @@ export function RefPill({ group, children, onContextMenu, onCheckoutBranch, onCh
   return (
     <span
       className={className.join(' ')}
+      style={usesLaneColor ? { '--ref-lane-color': laneColor } as CSSProperties : undefined}
       title={refGroupTitle(group) + (canPullOrigin ? '\nDouble-click to check for updates to the existing local branch.' : canCreate ? '\nDouble-click to create and check out a local branch tracking origin/' + group.name + '.' : canCheckout ? '\nDouble-click to switch branch; uncommitted changes require confirmation.' : '')}
       onClick={canDoubleClick ? (event) => {
         // Keep the label stationary between clicks; expanding the row can move it.
@@ -208,6 +213,7 @@ export function CommitRefRow({ groups, laneColor, onRefContextMenu, onCheckoutBr
         <RefPill
           key={`${group.kind}:${group.name}`}
           group={group}
+          laneColor={laneColor}
           onCheckoutBranch={onCheckoutBranch}
           onCheckoutRemoteBranch={onCheckoutRemoteBranch}
           localBranchNames={localBranchNames}

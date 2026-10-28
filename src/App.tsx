@@ -565,6 +565,7 @@ export function App() {
       isLoadingFileDiff={isLoadingFileDiff} fileDiffError={fileDiffError} diffViewTheme={resolvedTheme}
       onClose={() => setSelectedCommitHash(null)} /> : null) : selectedCommitHash === null ? null : (
       <CommitDetailPanel
+        laneColor={graphStats.selectedLaneColor}
         variant={detailLayout}
         detail={commitDetail}
         isLoading={isLoadingDetail}

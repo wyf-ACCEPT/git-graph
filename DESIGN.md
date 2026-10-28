@@ -61,3 +61,8 @@ shared detail panel geometry are canonical for both. Plain click opens the
 brief in the current page; separate external-link controls open full working
 or file diffs/previews. The working inline panel shifts every real graph node
 and edge by its measured height. No synthetic commit metadata is fabricated.
+
+Graph branch and HEAD labels inherit the actual lane color used by their commit
+node and checked-out marker, including in selected commit details. Checkout state
+uses weight and ring, never a fixed hue. Theme lane tokens remain canonical;
+standalone RefPill hosts without graph context retain semantic fallback colors.

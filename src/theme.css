@@ -250,3 +250,11 @@ mark {
   color: #953800;
   border-color: #ffb77c;
 }
+
+/* Graph labels, node and HEAD marker share the same theme-aware lane token.
+   Checkout state remains weight and ring, rather than a fixed blue override. */
+.ref-pill.ref-lane {
+  color: var(--ref-lane-color);
+  background: color-mix(in srgb, var(--ref-lane-color) 15%, var(--color-canvas));
+  border-color: color-mix(in srgb, var(--ref-lane-color) 55%, transparent);
+}

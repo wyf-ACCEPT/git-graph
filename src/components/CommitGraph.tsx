@@ -70,6 +70,7 @@ function FuzzySegments({ highlight }: { highlight: FuzzyHighlight }) {
 
 export type CommitGraphStats = {
   laneCount: number
+  selectedLaneColor?: string | null
   /** Number of rows matching the search query; null when there is no query. */
   matchCount: number | null
 }
@@ -194,9 +195,11 @@ export function CommitGraph({
     ? rows.reduce((count, row) => count + (row.matched ? 1 : 0), 0)
     : null
 
+  const selectedLane = selectedHash === null ? undefined : layout.placements[commits.findIndex(commit => commit.hash === selectedHash)]?.lane
+  const selectedLaneColor = selectedLane === undefined ? null : laneColor(selectedLane)
   useEffect(() => {
-    onStats?.({ laneCount: layout.laneCount, matchCount })
-  }, [layout.laneCount, matchCount, onStats])
+    onStats?.({ laneCount: layout.laneCount, matchCount, selectedLaneColor })
+  }, [layout.laneCount, matchCount, selectedLaneColor, onStats])
 
   // Bring the first match into view when the query changes.
   const rowsContainerRef = useRef<HTMLDivElement>(null)

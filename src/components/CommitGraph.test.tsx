@@ -482,3 +482,20 @@ describe('connected uncommitted changes', () => {
     expect(screen.getByRole('link')).toBeTruthy()
   })
 })
+
+test('branch labels and checked-out marker keep the actual node lane after switching HEAD', () => {
+  const alpha = commit({ hash: 'aaa1111', parents: ['ccc3333'], refs: ['HEAD -> alpha'], subject: 'alpha tip' })
+  const beta = commit({ hash: 'bbb2222', parents: ['ccc3333'], refs: ['beta'], subject: 'beta tip' })
+  const base = commit({ hash: 'ccc3333', refs: ['main'], subject: 'base' })
+  const view = render(<CommitGraph commits={[alpha, beta, base]} remotes={[]} />)
+  const pill = (label: string) => screen.getByText(label).closest('.ref-pill') as HTMLElement
+  expect(pill('alpha').style.getPropertyValue('--ref-lane-color')).toBe('var(--lane-0)')
+  expect(pill('beta').style.getPropertyValue('--ref-lane-color')).toBe('var(--lane-1)')
+  view.rerender(<CommitGraph commits={[{ ...alpha, refs: ['alpha'] }, { ...beta, refs: ['HEAD -> beta'] }, base]} remotes={[]} />)
+  expect(pill('beta').classList.contains('ref-checked-out')).toBe(true)
+  expect(pill('beta').style.getPropertyValue('--ref-lane-color')).toBe('var(--lane-1)')
+  expect(pill('alpha').classList.contains('ref-checked-out')).toBe(false)
+  expect(pill('alpha').style.getPropertyValue('--ref-lane-color')).toBe('var(--lane-0)')
+  expect(view.container.querySelector('circle[r="6"]')?.getAttribute('stroke')).toBe('var(--lane-1)')
+  expect((view.container.querySelector('.ref-head-dot') as HTMLElement)?.style.borderColor).toBe('var(--lane-1)')
+})

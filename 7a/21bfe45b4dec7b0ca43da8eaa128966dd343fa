@@ -1,0 +1,31 @@
+DESIGN.md
+  s_e1406b396038b6::t_549305b5e6e052 64-68
+src/App.tsx
+  s_e1406b396038b6::t_dcf0573e42938b 568
+src/components/CommitDetailPanel.tsx
+  s_e1406b396038b6::t_dcefdd5b535366 332,369,538
+src/components/CommitGraph.test.tsx
+  s_e1406b396038b6::t_a7a01a31cf33dd 485-501
+src/components/CommitGraph.tsx
+  s_e1406b396038b6::t_1a34bc039c892c 73,198-199,201-202
+src/components/RefPill.tsx
+  s_e1406b396038b6::t_4554b858d0ff30 1,33-34,65,82-83,93,216
+src/theme.css
+  s_e1406b396038b6::t_9fb518b7475bcf 253-260
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7a21bfe45b4dec7b0ca43da8eaa128966dd343fa",
+  "prompts": {},
+  "sessions": {
+    "s_e1406b396038b6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16774-4a6c-7560-ad9c-4d4495a6a4f1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
